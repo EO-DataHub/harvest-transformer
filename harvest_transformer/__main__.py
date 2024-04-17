@@ -170,48 +170,55 @@ def update_file(bucket_name: str, key: str, updated_key: str, source: str, targe
     logging.info(f"Links successfully rewritten for file {key}")
 
 
+def process_pulsar_message(msg):
+    """
+    Update files from given message where required,
+    and send a Pulsar message with updated files
+    """
+    data = msg.data().decode("utf-8")
+    data_dict = json.loads(data.replace("'", '"'))
+    try:
+        jsonschema.validate(data_dict, harvest_schema)
+    except jsonschema.exceptions.ValidationError as e:
+        logging.error(f"Validation failed: {e}")
+        raise
+
+    bucket_name = data_dict.get("bucket_name")
+    source = data_dict.get("source")
+    target = data_dict.get("target")
+
+    output_data = copy.deepcopy(data_dict)
+    output_data["added_keys"] = []
+    output_data["updated_keys"] = []
+    output_data["deleted_keys"] = []
+
+    for key in data_dict["added_keys"]:
+        updated_key = transform_key(key)
+        update_file(bucket_name, key, updated_key, source, target)
+        output_data["added_keys"].append(updated_key)
+    for key in data_dict["updated_keys"]:
+        updated_key = transform_key(key)
+        update_file(bucket_name, key, updated_key, source, target)
+        output_data["updated_keys"].append(updated_key)
+    for key in data_dict["deleted_keys"]:
+        updated_key = transform_key(key)
+        delete_file_s3(bucket_name, updated_key, source, target)
+        output_data["deleted_keys"].append(updated_key)
+
+    # Send message to Pulsar
+    producer.send((json.dumps(output_data)).encode("utf-8"))
+    logging.info(f"Sent transformed message {output_data}")
+
+
 def main():
     """
-    Poll for new Pulsar messages, update files where required, and send a Pulsar message with
-    updated files
+    Poll for new Pulsar messages and trigger transform process
     """
     while True:
         msg = consumer.receive()
         try:
             logging.info(f"Parsing harvested message {msg.data()}")
-            data = msg.data().decode("utf-8")
-            data_dict = json.loads(data.replace("'", '"'))
-            try:
-                jsonschema.validate(data_dict, harvest_schema)
-            except jsonschema.exceptions.ValidationError as e:
-                logging.error(f"Validation failed: {e}")
-                raise
-
-            bucket_name = data_dict.get("bucket_name")
-            source = data_dict.get("source")
-            target = data_dict.get("target")
-
-            output_data = copy.deepcopy(data_dict)
-            output_data["added_keys"] = []
-            output_data["updated_keys"] = []
-            output_data["deleted_keys"] = []
-
-            for key in data_dict["added_keys"]:
-                updated_key = transform_key(key)
-                update_file(bucket_name, key, updated_key, source, target)
-                output_data["added_keys"].append(updated_key)
-            for key in data_dict["updated_keys"]:
-                updated_key = transform_key(key)
-                update_file(bucket_name, key, updated_key, source, target)
-                output_data["updated_keys"].append(updated_key)
-            for key in data_dict["deleted_keys"]:
-                updated_key = transform_key(key)
-                delete_file_s3(bucket_name, updated_key, source, target)
-                output_data["deleted_keys"].append(updated_key)
-
-            # Send message to Pulsar
-            producer.send((json.dumps(output_data)).encode("utf-8"))
-            logging.info(f"Sent transformed message {output_data}")
+            process_pulsar_message(msg)
 
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
