@@ -93,8 +93,8 @@ dev = ["pip-tools", "pytest", "pytest-xdist", "pytest-mock", "pytest-watcher", "
 # what's used to render the link text on PyPI.
 [project.urls]  # Optional
 homepage = "https://github.com/UKEODHP/"
-repository = "CHANGEME-https://github.com/UKEODHP/harvest-transformer"
-changelog = "CHANGEME-https://github.com/UKEODHP/harvest-transformer/blob/main/CHANGELOG.md"
+repository = "https://github.com/UKEODHP/harvest-transformer"
+changelog = "https://github.com/UKEODHP/harvest-transformer/blob/main/CHANGELOG.md"
 
 [build-system]
 # These are the assumed default build requirements from pip:
