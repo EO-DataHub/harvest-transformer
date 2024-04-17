@@ -1,15 +1,17 @@
-import os
 import argparse
-import json
 import copy
-import boto3
+import json
 import logging
+import os
+from urllib.parse import urljoin, urlparse
+
+import boto3
 import jsonschema
 import jsonschema.exceptions
-from harvest_transformer.pulsar_message import harvest_schema
 from botocore.exceptions import ClientError
 from pulsar import Client
-from urllib.parse import urljoin, urlparse
+
+from harvest_transformer.pulsar_message import harvest_schema
 
 parser = argparse.ArgumentParser()
 parser.add_argument("output_root", help="Root URL for EODHP", type=str)
