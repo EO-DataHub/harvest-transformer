@@ -1,0 +1,28 @@
+name: harvest-transformer
+# namespace: transform
+
+# The build section defines how to build the images of your development environment
+# More info: https://www.okteto.com/docs/reference/manifest/#build
+build:
+  harvest-transformer:
+    context: .
+    dockerfile: Dockerfile
+    image: apalmertpzuk/harvest-transformer
+
+# The dev section defines how to activate a development container
+# More info: https://www.okteto.com/docs/reference/manifest/#dev
+dev:
+  harvest-transformer:
+    image: apalmertpzuk/eodhp-web-presence
+    autocreate: true
+    workdir: /app
+    command: bash
+    forward:
+      - 8000:8000
+      - 8088:8088
+    reverse:
+      - 9000:9000
+    volumes:
+      - /root/.cache/pip
+    sync:
+      - .:/app
