@@ -13,7 +13,7 @@ build:
 # More info: https://www.okteto.com/docs/reference/manifest/#dev
 dev:
   harvest-transformer:
-    image: apalmertpzuk/eodhp-web-presence
+    image: apalmertpzuk/harvest-transformer
     autocreate: true
     workdir: /app
     command: bash
