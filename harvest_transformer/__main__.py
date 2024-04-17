@@ -23,11 +23,16 @@ client = Client(pulsar_url)
 consumer = client.subscribe(topic="harvested", subscription_name="transformer-subscription")
 producer = client.create_producer(topic="transformed", producer_name="transformer")
 
-s3_client = boto3.client(
-    "s3",
-    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-    aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-)
+
+if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
+    session = boto3.session.Session(
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    )
+    s3 = session.client("s3")
+
+else:
+    s3 = boto3.client("s3")
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
