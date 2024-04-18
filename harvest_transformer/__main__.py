@@ -209,7 +209,7 @@ def process_pulsar_message(msg):
         output_data["updated_keys"].append(updated_key)
     for key in data_dict["deleted_keys"]:
         updated_key = transform_key(key)
-        delete_file_s3(bucket_name, updated_key, source, target)
+        delete_file_s3(bucket_name, updated_key)
         output_data["deleted_keys"].append(updated_key)
 
     # Send message to Pulsar
