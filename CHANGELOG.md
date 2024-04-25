@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.1 (25-04-2024)
+
+- Added workflows
+- Update dockerfile
+- Changed AWS connection
+
 ## v0.1.0 (17-04-2024)
 
 - Initial commit of Harvest Transformer
