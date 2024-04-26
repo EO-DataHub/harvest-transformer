@@ -16,4 +16,4 @@ ADD harvest_transformer ./harvest_transformer/
 ADD pyproject.toml ./
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt .
  
-CMD python -m harvest_transformer $1
+ENTRYPOINT ["python", "-m", "harvest_transformer"]
