@@ -10,10 +10,10 @@ RUN apt-get install --yes --quiet --no-install-recommends \
 
 RUN python -m pip install --upgrade pip
 
-WORKDIR /app
-COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
+WORKDIR /harvest_transformer
+ADD LICENSE requirements.txt ./
+ADD harvest_transformer ./harvest_transformer/
+ADD pyproject.toml ./
+RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt .
  
-COPY harvest_transformer .
- 
-CMD ["python", "-m", "harvest_transformer", "https://dev.eodatahub.org.uk/catalogue-data"]
+ENTRYPOINT ["python", "-m", "harvest_transformer"]
