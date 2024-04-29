@@ -3,13 +3,15 @@ import copy
 import json
 import logging
 import os
+import urllib.request
 from urllib.parse import urljoin, urlparse
+from urllib.request import urlopen
 
 import boto3
 import jsonschema
 import jsonschema.exceptions
 from botocore.exceptions import ClientError
-from pulsar import Client
+from pulsar import Client, Message
 
 from harvest_transformer.pulsar_message import harvest_schema
 
@@ -72,11 +74,11 @@ def is_valid_url(url: str) -> bool:
         return False
 
 
-def transform_key(key: str) -> str:
-    """Moves a given key to a transformed subdirectory"""
-    transformed_key = key.replace("git-harvester", "transformed", 1)
-    if transformed_key == key:
-        transformed_key = "transformed/" + key
+def transform_key(file_name: str, source: str, target: str) -> str:
+    """Creates a key in a transformed subdirectory from a given file name"""
+    transformed_key = file_name.replace("git-harvester", "transformed", 1)
+    if transformed_key == file_name:
+        transformed_key = "transformed" + file_name.replace(source, target)
     return transformed_key
 
 
@@ -86,9 +88,24 @@ def delete_sections(json_data: dict) -> dict:
     return json_data
 
 
+def find_all_links(node):
+    """Recursively find all nested links in a given item"""
+    if isinstance(node, list):
+        for i in node:
+            for x in find_all_links(i):
+                yield x
+    elif isinstance(node, dict):
+        if "links" in node:
+            for link in node["links"]:
+                yield link
+        for j in node.values():
+            for x in find_all_links(j):
+                yield x
+
+
 def rewrite_links(json_data: dict, source: str, target_location: str, output_self: str) -> dict:
     """Rewrite links so that they are suitable for an EODHP catalogue"""
-    for link in json_data.get("links"):
+    for link in find_all_links(json_data):
         if not link.get("href").startswith(args.output_root):
             if link.get("href").startswith(source):
                 # Link is an absolute link. Replace the source.
@@ -125,21 +142,43 @@ def add_link_if_missing(links: dict, rel: str, href: str):
         links.append({"rel": rel, "href": href})
 
 
-def update_file(bucket_name: str, key: str, updated_key: str, source: str, target: str):
-    """
-    Updates content within a file at given bucket and key.
-    Uploads updated file contents to updated_key within the same bucket.
-    """
-    file_contents = get_file_s3(bucket_name, key)
-    target_location = args.output_root + target
+def get_file_from_url(url: str, retries: int = 0) -> str:
+    """Returns contents of data available at given URL"""
+    if retries == 3:
+        # Max number of retries
+        return None
     try:
-        file_json = json.loads(file_contents)
+        with urlopen(url, timeout=5) as response:
+            body = response.read()
+    except urllib.error.URLError:
+        logging.error(f"Unable to access {url}, retrying...")
+        return get_file_from_url(url, retries + 1)
+    return body.decode("utf-8")
+
+
+def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key: str) -> dict:
+    """Returns JSON object of contents located at file_location"""
+    if is_valid_url(file_location):
+        file_contents = get_file_from_url(file_location)
+    else:
+        file_contents = get_file_s3(bucket_name, file_location)
+    try:
+        return json.loads(file_contents)
     except ValueError:
         # Invalid JSON. Upload without changes
-        logging.info(f"File {key} is not valid JSON.")
-        file_body = json.dumps(file_json)
-        upload_file_s3(file_body, bucket_name, updated_key)
+        logging.info(f"File {file_location} is not valid JSON.")
+        upload_file_s3(file_contents, bucket_name, updated_key)
         return
+
+
+def update_file(bucket_name: str, file_name: str, updated_key: str, source: str, target: str):
+    """
+    Updates content within a given file name. File name may either be a URL or S3 key.
+    Uploads updated file contents to updated_key within the given bucket.
+    """
+    target_location = args.output_root + target
+
+    file_json = get_file_contents_as_json(bucket_name, file_name, updated_key)
 
     # Delete unnecessary sections
     file_json = delete_sections(file_json)
@@ -149,7 +188,7 @@ def update_file(bucket_name: str, key: str, updated_key: str, source: str, targe
             link.get("href") for link in file_json.get("links") if link.get("rel") == "self"
         ][0]
     except (TypeError, IndexError):
-        logging.error(f"File {key} does not contain a self link. Unable to rewrite links.")
+        logging.error(f"File {file_name} does not contain a self link. Unable to rewrite links.")
         file_body = json.dumps(file_json)
         upload_file_s3(file_body, bucket_name, updated_key)
         return
@@ -157,7 +196,7 @@ def update_file(bucket_name: str, key: str, updated_key: str, source: str, targe
     output_self = self_link.replace(source, target_location)
     if not is_valid_url(output_self):
         logging.error(
-            f"File {key} does not produce a valid self link with given "
+            f"File {file_name} does not produce a valid self link with given "
             f"self link {self_link}, source {source}, and target {target_location}. "
             f"Unable to rewrite links."
         )
@@ -174,10 +213,10 @@ def update_file(bucket_name: str, key: str, updated_key: str, source: str, targe
     # Upload file to S3
     file_body = json.dumps(file_json)
     upload_file_s3(file_body, bucket_name, updated_key)
-    logging.info(f"Links successfully rewritten for file {key}")
+    logging.info(f"Links successfully rewritten for file {file_name}")
 
 
-def process_pulsar_message(msg):
+def process_pulsar_message(msg: Message):
     """
     Update files from given message where required,
     and send a Pulsar message with updated files
@@ -199,16 +238,17 @@ def process_pulsar_message(msg):
     output_data["updated_keys"] = []
     output_data["deleted_keys"] = []
 
-    for key in data_dict["added_keys"]:
-        updated_key = transform_key(key)
+    for key in data_dict.get("added_keys"):
+        updated_key = transform_key(key, source, target)
         update_file(bucket_name, key, updated_key, source, target)
         output_data["added_keys"].append(updated_key)
-    for key in data_dict["updated_keys"]:
-        updated_key = transform_key(key)
+    for key in data_dict.get("updated_keys"):
+        updated_key = transform_key(key, source, target)
         update_file(bucket_name, key, updated_key, source, target)
         output_data["updated_keys"].append(updated_key)
-    for key in data_dict["deleted_keys"]:
-        updated_key = transform_key(key)
+
+    for key in data_dict.get("deleted_keys"):
+        updated_key = transform_key(key, source, target)
         delete_file_s3(bucket_name, updated_key)
         output_data["deleted_keys"].append(updated_key)
 
