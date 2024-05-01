@@ -245,14 +245,6 @@ def workflow_check_missing_fields(stac_dict: dict) -> list:
                 missing_fields.append("inputs")
             if "outputs" not in stac_dict["summaries"]:
                 missing_fields.append("outputs")
-            if "examples" not in stac_dict["summaries"]:
-                missing_fields.append("examples")
-            if "pricing" not in stac_dict["summaries"]:
-                missing_fields.append("pricing")
-            if "documentation" not in stac_dict["summaries"]:
-                missing_fields.append("documentation")
-            if "contact_information" not in stac_dict["summaries"]:
-                missing_fields.append("contact_information")
 
     return missing_fields
 
@@ -343,6 +335,7 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         elif field == "inputs":
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "inputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                # Add an inputs field to the summaries object only when it can be populated
                 stac_collection_raw["summaries"].update({"inputs": None})
                 stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][
                     cwl_workflow_position
@@ -350,12 +343,16 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         elif field == "outputs":
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "outputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                # Add an outputs field to the summaries object only when it can be populated
                 stac_collection_raw["summaries"].update({"outputs": None})
                 stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][
                     cwl_workflow_position
                 ]["outputs"]
         else:
-            stac_collection_raw.update({field: None})
+            if field == "summaries":
+                stac_collection_raw.update({field: {}})
+            else:
+                stac_collection_raw.update({field:"N/A"})
             # For some fields the script can scrape potential data from the cwl script itself
             match field:
                 case "type":
@@ -423,7 +420,7 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         if "type" not in link.keys():
             link.update({"type": "N/A"})
         if "href" not in link.keys():
-            link.update({"href": "N/A"})
+            link.update({"href": None})
         if link["rel"] not in required_relations:
             continue
         else:
@@ -449,9 +446,6 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
     if ORDERED:
         stac_collection = collections.OrderedDict(
             (key, stac_collection_raw[key]) for key in REQUIRED_COLLECTIONS_FIELDS
-        )
-        stac_collection["summaries"] = collections.OrderedDict(
-            (key, stac_collection["summaries"][key]) for key in REQUIRED_WORKFLOW_SUMMARIES_FIELDS
         )
 
     return stac_collection
