@@ -448,7 +448,7 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
                         # Currently set to example path based on source as overwritten by STAC Fastapi ingester
                         link["href"] = f"{source}/{file_name.replace('.json', '__root.json')}"
                     case "self":
-                        # This link wis set using source so that it will be replaced by the link transformer step
+                        # This link is set using source so that it will be replaced by the link transformer step
                         link["href"] = f"{source}/{file_name}"
 
     stac_collection = stac_collection_raw
