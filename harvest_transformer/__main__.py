@@ -342,10 +342,12 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         elif field == "inputs":
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "inputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                stac_collection_raw["summaries"].update({"inputs": None})
                 stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][cwl_workflow_position]["inputs"]
         elif field == "outputs":
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "outputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                stac_collection_raw["summaries"].update({"outputs": None})
                 stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][cwl_workflow_position]["outputs"]
         elif field == "examples":
             None
@@ -377,6 +379,7 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
                     stac_collection_raw["stac_version"] = DEFAULT_STAC_VERSION
                 case "description":
                     if scrape_cwl and "doc" in cwl_dict["$graph"][cwl_workflow_position]:
+                        stac_collection_raw.update({"description": None})
                         stac_collection_raw["description"] = cwl_dict["$graph"][cwl_workflow_position]["doc"]
                 case "license":
                     stac_collection_raw["license"] = "N/A"
@@ -384,8 +387,10 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
                     stac_collection_raw["keywords"] = ["workflow"]
                 case "summaries":
                     if scrape_cwl and "inputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                        stac_collection_raw["summaries"].update({"inputs": None})
                         stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][cwl_workflow_position]["inputs"]
                     if scrape_cwl and "outputs" in cwl_dict["$graph"][cwl_workflow_position]:
+                        stac_collection_raw["summaries"].update({"outputs": None})
                         stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][cwl_workflow_position]["outputs"]                            
                 case _:
                     continue
