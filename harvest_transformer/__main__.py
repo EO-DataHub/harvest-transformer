@@ -352,7 +352,7 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
             if field == "summaries":
                 stac_collection_raw.update({field: {}})
             else:
-                stac_collection_raw.update({field:"N/A"})
+                stac_collection_raw.update({field: "N/A"})
             # For some fields the script can scrape potential data from the cwl script itself
             match field:
                 case "type":
