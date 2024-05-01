@@ -277,10 +277,12 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         cwl_href = stac_collection_raw["assets"]["cwl_script"]["href"]
         cwl_script = get_file_from_url(cwl_href)
         cwl_dict = yaml.safe_load(cwl_script)
-    except KeyError as e:
-        logging.warning(f"The STAC defintion provided in {file_name} is missing a cwl script href.")
+    except KeyError:
+        logging.warning(f"The STAC defintion provided in {file_name} is missing a cwl "
+                        "script href.")
         logging.info(
-            "Continuing with workflow STAC creation, using UUID for Workflow ID and all default values"
+            "Continuing with workflow STAC creation, using UUID for Workflow ID and all "
+            "default values"
         )
         # CWL reference not available, so cannot scrape the CWL script
         scrape_cwl = False
@@ -292,11 +294,14 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         return
     except Exception as e:
         logging.warning(
-            f"Failed to access cwl script defined in {file_name} at {stac_collection_raw['assets']['cwl_script']['href']}, please ensure the url is available."
+            f"Failed to access cwl script defined in {file_name} at "
+            f"{stac_collection_raw['assets']['cwl_script']['href']}, please ensure the url "
+            "is available."
         )
         logging.warning(repr(e))
         logging.info(
-            "Continuing with workflow STAC creation, using UUID for Workflow ID and all default values"
+            "Continuing with workflow STAC creation, using UUID for Workflow ID and all "
+            "default values"
         )
         scrape_cwl = False
 
@@ -324,7 +329,8 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
             logging.error(repr(e))
             return
 
-    # For each missing field, we need to add it to the stac collection and attempt to complete it automatically
+    # For each missing field, we need to add it to the stac collection and attempt to complete it
+    # automatically
     for field in missing_fields:
         if field == "extent":
             stac_collection_raw.update({"extent": DEFAULT_EXTENT_FIELD})
@@ -442,13 +448,16 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
             if not link["href"]:
                 match link["rel"]:
                     case "parent":
-                        # Currently set to example path based on source as overwritten by STAC Fastapi ingester
+                        # Currently set to example path based on source as overwritten by STAC
+                        # Fastapi ingester
                         link["href"] = f"{source}/{file_name.replace('.json', '__parent.json')}"
                     case "root":
-                        # Currently set to example path based on source as overwritten by STAC Fastapi ingester
+                        # Currently set to example path based on source as overwritten by STAC
+                        # Fastapi ingester
                         link["href"] = f"{source}/{file_name.replace('.json', '__root.json')}"
                     case "self":
-                        # This link is set using source so that it will be replaced by the link transformer step
+                        # This link is set using source so that it will be replaced by the link
+                        # transformer step
                         link["href"] = f"{source}/{file_name}"
 
     stac_collection = stac_collection_raw
@@ -481,8 +490,6 @@ def update_file(bucket_name: str, file_name: str, updated_key: str, source: str,
     if "assets" in file_json and "cwl_script" in file_json["assets"]:
         file_json = workflow_update_stac(file_json, file_name, source)
         logging.info(f"Workflow STAC collection successfully rewritten for file {file_name}")
-
-    link = file_json.get("links")[0]
 
     try:
         self_link = [
