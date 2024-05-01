@@ -269,8 +269,9 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
         cwl_script = get_file_from_url(cwl_href)
         cwl_dict = yaml.safe_load(cwl_script)
     except KeyError:
-        logging.warning(f"The STAC defintion provided in {file_name} is missing a cwl "
-                        "script href.")
+        logging.warning(
+            f"The STAC defintion provided in {file_name} is missing a cwl " "script href."
+        )
         logging.info(
             "Continuing with workflow STAC creation, using UUID for Workflow ID and all "
             "default values"
@@ -343,20 +344,16 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "inputs" in cwl_dict["$graph"][cwl_workflow_position]:
                 stac_collection_raw["summaries"].update({"inputs": None})
-                stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][cwl_workflow_position]["inputs"]
+                stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][
+                    cwl_workflow_position
+                ]["inputs"]
         elif field == "outputs":
             # For some fields the script can scrape potential data from the cwl script itself
             if scrape_cwl and "outputs" in cwl_dict["$graph"][cwl_workflow_position]:
                 stac_collection_raw["summaries"].update({"outputs": None})
-                stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][cwl_workflow_position]["outputs"]
-        elif field == "examples":
-            None
-        elif field == "pricing":
-            None
-        elif field == "documentation":
-            None
-        elif field == "contact_information":
-            None
+                stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][
+                    cwl_workflow_position
+                ]["outputs"]
         else:
             stac_collection_raw.update({field: None})
             # For some fields the script can scrape potential data from the cwl script itself
@@ -380,7 +377,9 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
                 case "description":
                     if scrape_cwl and "doc" in cwl_dict["$graph"][cwl_workflow_position]:
                         stac_collection_raw.update({"description": None})
-                        stac_collection_raw["description"] = cwl_dict["$graph"][cwl_workflow_position]["doc"]
+                        stac_collection_raw["description"] = cwl_dict["$graph"][
+                            cwl_workflow_position
+                        ]["doc"]
                 case "license":
                     stac_collection_raw["license"] = "N/A"
                 case "keywords":
@@ -388,10 +387,14 @@ def workflow_update_stac(stac_dict: dict, file_name: str, source: str) -> list:
                 case "summaries":
                     if scrape_cwl and "inputs" in cwl_dict["$graph"][cwl_workflow_position]:
                         stac_collection_raw["summaries"].update({"inputs": None})
-                        stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][cwl_workflow_position]["inputs"]
+                        stac_collection_raw["summaries"]["inputs"] = cwl_dict["$graph"][
+                            cwl_workflow_position
+                        ]["inputs"]
                     if scrape_cwl and "outputs" in cwl_dict["$graph"][cwl_workflow_position]:
                         stac_collection_raw["summaries"].update({"outputs": None})
-                        stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][cwl_workflow_position]["outputs"]                            
+                        stac_collection_raw["summaries"]["outputs"] = cwl_dict["$graph"][
+                            cwl_workflow_position
+                        ]["outputs"]
                 case _:
                     continue
 
