@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.2 (01-05-2024)
+## v0.1.1 (01-05-2024)
 
 - Added workflow transformer for STAC collections
   - Generate STAC collection definition for workflows
@@ -9,9 +9,6 @@
   - Generate workflow ID (uuid) if not provided
   - Upload transformed workflow to S3 bucket
 - Updated logging to streamline debug logs
-
-## v0.1.1 (25-04-2024)
-
 - Added workflows
 - Update dockerfile
 - Changed AWS connection
