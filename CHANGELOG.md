@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2 (02-05-2024)
+
+- Refactored code to better separate S3/Pulsar functionality from transformer code
+- Improved link correction in link processor
+- Separated transformer code for different transformers
+
 ## v0.1.1 (01-05-2024)
 
 - Added workflow transformer for STAC collections

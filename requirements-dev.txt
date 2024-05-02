@@ -79,7 +79,7 @@ six==1.16.0
     # via
     #   jsonschema
     #   python-dateutil
-urllib3==2.2.1
+urllib3==1.26.18
     # via botocore
 watchdog==4.0.0
     # via pytest-watcher
