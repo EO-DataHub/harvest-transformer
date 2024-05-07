@@ -98,7 +98,8 @@ class LinkProcessor:
             ][0]
         except (TypeError, IndexError):
             logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
-            # Create temporary link in item using source which will be replaced by the subsequent transformer
+            # Create temporary self link in item using source which will be replaced by the subsequent
+            # transformer
             self.add_link_if_missing(file_json, "self", source + file_name)
             self_link = [
                 link.get("href") for link in file_json.get("links") if link.get("rel") == "self"
