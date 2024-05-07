@@ -21,10 +21,10 @@ def test_links_replacement():
     output_json = json.loads(output)
 
     # Expected outputs
-    expect_self_link = "https://output.root.test/target_directory/collections/sentinel2_ard/items/neodc.sentinel_ard.data.sentinel_2.2023.11.20.S2A_20231120_latn501lonw0036_T30UVA_ORB037_20231120132420_utm30n_osgb"
+    expect_self_link = "https://output.root.test/target_directory/collections/example_collection/items/example_stac_feature"
     expect_root_link = "https://output.root.test/target_directory/"
-    expect_parent_link = "https://output.root.test/target_directory/collections/sentinel2_ard"
-    expect_collection_link = "https://output.root.test/target_directory/collections/sentinel2_ard"
+    expect_parent_link = "https://output.root.test/target_directory/collections/example_collection"
+    expect_collection_link = "https://output.root.test/target_directory/collections/example_collection"
 
     # Check updates links are correct
     for link in output_json["links"]:
