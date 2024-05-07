@@ -16,13 +16,6 @@
     "pricing": "Some information about pricing...",
     "contact_information": "Contact this person for more information...",
     "documentation": "Some additional documentation for this workflow...",
-    "examples": [
-      {
-        "fn": "resize",
-        "url": "https://eoepca.org/media_portal/images/logo6_med.original.png",
-        "size": "50%"
-      }
-    ],
     "inputs": {
       "fn": {
         "label": "the operation to perform",
@@ -45,6 +38,13 @@
         "id": "converted_image",
         "type": "Directory",
         "outputSource": ["convert/results"]
+      }
+    ],
+    "examples": [
+      {
+        "fn": "resize",
+        "url": "https://eoepca.org/media_portal/images/logo6_med.original.png",
+        "size": "50%"
       }
     ]
   },
