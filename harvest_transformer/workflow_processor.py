@@ -174,6 +174,8 @@ class WorkflowProcessor:
             else:
                 if field == "summaries":
                     stac_collection_raw.update({field: {}})
+                elif field == "links":
+                    stac_collection_raw.update({field: []})
                 else:
                     stac_collection_raw.update({field: "N/A"})
                 # For some fields the script can scrape potential data from the cwl script itself
@@ -182,14 +184,25 @@ class WorkflowProcessor:
                         stac_collection_raw["type"] = "Collection"
                     case "id":
                         # The id will be scraped from the cwl script or be generated randomly with a
+                        # uuid if not provided as id in the cwl
+                        id_uuid = stac_collection_raw["title"] if "title" in stac_collection_raw and stac_collection_raw["title"] else f"workflow__{uuid.uuid4()}"
                         stac_collection_raw["id"] = (
                             "workflow__" + cwl_dict["$graph"][cwl_workflow_position]["id"]
                             if scrape_cwl and "id" in cwl_dict["$graph"][cwl_workflow_position]
-                            else f"workflow__{uuid.uuid4()}"
+                            else id_uuid
                         )
                         logging.info(
                             "Generating STAC Collection for workflow "
                             f"{stac_collection_raw['id']}"
+                        )
+                    case "title":
+                        # The title will be scraped from the cwl script or be generated randomly with a
+                        # uuid if not provided as id in the cwl
+                        title_uuid = stac_collection_raw["id"] if "id" in stac_collection_raw and stac_collection_raw["id"] else f"workflow__{uuid.uuid4()}"
+                        stac_collection_raw["title"] = (
+                            "workflow__" + cwl_dict["$graph"][cwl_workflow_position]["id"]
+                            if scrape_cwl and "id" in cwl_dict["$graph"][cwl_workflow_position]
+                            else title_uuid
                         )
                     case "stac_extensions":
                         stac_collection_raw["stac_extensions"] = []
@@ -224,7 +237,7 @@ class WorkflowProcessor:
             links = stac_collection_raw["links"]
             for link in links:
                 if link["rel"] == "self":
-                    link["href"] = source + "/" + file_name
+                    link["href"] = source + file_name
                     break
 
         stac_collection = stac_collection_raw
