@@ -65,9 +65,9 @@ class WorkflowProcessor:
                     missing_fields.append("interval")
 
             elif field == "summaries":
-                if "inputs" not in stac_dict["summaries"]:
+                if "inputs" not in stac_dict["summaries"] or not stac_dict["summaries"]["inputs"]:
                     missing_fields.append("inputs")
-                if "outputs" not in stac_dict["summaries"]:
+                if "outputs" not in stac_dict["summaries"] or not stac_dict["summaries"]["outputs"]:
                     missing_fields.append("outputs")
 
         return missing_fields
