@@ -1,0 +1,21 @@
+{
+  "assets": {
+    "cwl_script": {
+      "href": "https://raw.githubusercontent.com/tjellicoe-tpzuk/example-cwl-script/main/convert-stac-app.cwl",
+      "roles": ["data"],
+      "type": "application/cwl"
+    }
+  },
+  "summaries": {
+    "pricing": "Some information about pricing...",
+    "contact_information": "Contact this person for more information...",
+    "documentation": "Some additional documentation for this workflow...",
+    "examples": [
+      {
+        "fn": "resize",
+        "url": "https://eoepca.org/media_portal/images/logo6_med.original.png",
+        "size": "50%"
+      }
+    ]
+  }
+}

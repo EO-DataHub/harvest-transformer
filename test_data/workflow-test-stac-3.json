@@ -1,0 +1,63 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "description": "Convert URL",
+  "keywords": ["workflow"],
+  "license": "example_license",
+  "providers": "example_provider",
+  "extent": {
+    "spatial": { "bbox": [[-180, -90, 180, 90]] },
+    "temporal": { "interval": [[null, null]] }
+  },
+  "summaries": {
+    "pricing": "Some information about pricing...",
+    "contact_information": "Contact this person for more information...",
+    "documentation": "Some additional documentation for this workflow...",
+    "examples": [
+      {
+        "fn": "resize",
+        "url": "https://eoepca.org/media_portal/images/logo6_med.original.png",
+        "size": "50%"
+      }
+    ],
+    "inputs": {
+      "fn": {
+        "label": "the operation to perform",
+        "doc": "the operation to perform",
+        "type": "string"
+      },
+      "url": {
+        "label": "the image to convert",
+        "doc": "the image to convert",
+        "type": "string"
+      },
+      "size": {
+        "label": "the percentage for a resize operation",
+        "doc": "the percentage for a resize operation",
+        "type": "string"
+      }
+    },
+    "outputs": [
+      {
+        "id": "converted_image",
+        "type": "Directory",
+        "outputSource": ["convert/results"]
+      }
+    ]
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://example.link.for.test/test_data/convert-url-app.json"
+    },
+    { "rel": "root", "href": "https://example.link.for.test" }
+  ],
+  "assets": {
+    "cwl_script": {
+      "href": "path/to/local/cwl/script",
+      "roles": ["data"],
+      "type": "application/cwl"
+    }
+  }
+}
