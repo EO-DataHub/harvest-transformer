@@ -185,7 +185,11 @@ class WorkflowProcessor:
                     case "id":
                         # The id will be scraped from the cwl script or be generated randomly with a
                         # uuid if not provided as id in the cwl
-                        id_uuid = stac_collection_raw["title"] if "title" in stac_collection_raw and stac_collection_raw["title"] else f"workflow__{uuid.uuid4()}"
+                        id_uuid = (
+                            stac_collection_raw["title"]
+                            if "title" in stac_collection_raw and stac_collection_raw["title"]
+                            else f"workflow__{uuid.uuid4()}"
+                        )
                         stac_collection_raw["id"] = (
                             "workflow__" + cwl_dict["$graph"][cwl_workflow_position]["id"]
                             if scrape_cwl and "id" in cwl_dict["$graph"][cwl_workflow_position]
@@ -198,7 +202,11 @@ class WorkflowProcessor:
                     case "title":
                         # The title will be scraped from the cwl script or be generated randomly with a
                         # uuid if not provided as id in the cwl
-                        title_uuid = stac_collection_raw["id"] if "id" in stac_collection_raw and stac_collection_raw["id"] else f"workflow__{uuid.uuid4()}"
+                        title_uuid = (
+                            stac_collection_raw["id"]
+                            if "id" in stac_collection_raw and stac_collection_raw["id"]
+                            else f"workflow__{uuid.uuid4()}"
+                        )
                         stac_collection_raw["title"] = (
                             "workflow__" + cwl_dict["$graph"][cwl_workflow_position]["id"]
                             if scrape_cwl and "id" in cwl_dict["$graph"][cwl_workflow_position]
