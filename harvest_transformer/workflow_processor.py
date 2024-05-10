@@ -46,35 +46,38 @@ DEFAULT_STAC_VERSION = "1.0.0"
 class WorkflowProcessor:
 
     # Identify which STAC fields are missing that are required for a collection
-    def workflow_check_missing_fields(self, stac_dict: dict) -> list:
+    def workflow_check_missing_fields(self, file_json: dict) -> list:
         missing_fields = []
         for field in REQUIRED_COLLECTIONS_FIELDS:
-            if field not in stac_dict or not stac_dict[field]:
+            if field not in file_json or not file_json[field]:
                 missing_fields.append(field)
             elif field == "extent":
-                if "spatial" not in stac_dict[field]:
+                if "spatial" not in file_json[field]:
                     missing_fields.append("spatial")
-                elif "bbox" not in stac_dict[field]["spatial"]:
+                elif "bbox" not in file_json[field]["spatial"]:
                     missing_fields.append("bbox")
 
-                if "temporal" not in stac_dict[field]:
+                if "temporal" not in file_json[field]:
                     missing_fields.append("temporal")
-                elif "interval" not in stac_dict[field]["temporal"]:
+                elif "interval" not in file_json[field]["temporal"]:
                     missing_fields.append("interval")
-                elif not stac_dict[field]["temporal"]["interval"]:
+                elif not file_json[field]["temporal"]["interval"]:
                     missing_fields.append("interval")
 
             elif field == "summaries":
-                if "inputs" not in stac_dict["summaries"] or not stac_dict["summaries"]["inputs"]:
+                if "inputs" not in file_json["summaries"] or not file_json["summaries"]["inputs"]:
                     missing_fields.append("inputs")
-                if "outputs" not in stac_dict["summaries"] or not stac_dict["summaries"]["outputs"]:
+                if "outputs" not in file_json["summaries"] or not file_json["summaries"]["outputs"]:
                     missing_fields.append("outputs")
 
         return missing_fields
 
-    def update_file(self, file_name: str, source: str, stac_dict: dict) -> dict:
+    def update_file(self, file_name: str, source: str, file_json: dict, **kwargs) -> dict:
 
-        stac_collection_raw = stac_dict
+        if ("assets" not in file_json) or ("assets" in file_json and not "cwl_script" in file_json["assets"]):
+            return file_json
+
+        stac_collection_raw = file_json
 
         scrape_cwl = True
 

@@ -26,15 +26,12 @@ class LinkProcessor:
         """Recursively find all nested links in a given item"""
         if isinstance(node, list):
             for i in node:
-                for x in self.find_all_links(i):
-                    yield x
+                yield from self.find_all_links(i)
         elif isinstance(node, dict):
             if "links" in node:
-                for link in node["links"]:
-                    yield link
+                yield from node["links"]
             for j in node.values():
-                for x in self.find_all_links(j):
-                    yield x
+                yield from self.find_all_links(j)
 
     def rewrite_links(
         self, json_data: dict, source: str, target_location: str, output_self: str, output_root: str
@@ -84,6 +81,7 @@ class LinkProcessor:
         target_location: str,
         file_json: dict,
         output_root: str,
+        **kwargs,
     ) -> dict:
         """
         Updates content within a given file name. File name may either be a URL or S3 key.
