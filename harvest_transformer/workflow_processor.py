@@ -74,7 +74,9 @@ class WorkflowProcessor:
 
     def update_file(self, file_name: str, source: str, file_json: dict, **kwargs) -> dict:
 
-        if ("assets" not in file_json) or ("assets" in file_json and not "cwl_script" in file_json["assets"]):
+        if ("assets" not in file_json) or (
+            "assets" in file_json and "cwl_script" not in file_json["assets"]
+        ):
             return file_json
 
         stac_collection_raw = file_json

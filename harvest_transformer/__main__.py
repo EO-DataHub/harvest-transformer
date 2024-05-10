@@ -14,8 +14,8 @@ from pulsar import Client, Message
 from harvest_transformer.pulsar_message import harvest_schema
 
 from .link_processor import LinkProcessor
-from .workflow_processor import WorkflowProcessor
 from .utils import get_file_from_url
+from .workflow_processor import WorkflowProcessor
 
 # configure boto3 logging
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
@@ -94,27 +94,34 @@ def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key:
         logging.info(f"File {file_location} is not valid JSON.")
         upload_file_s3(file_contents, bucket_name, updated_key)
         return
-    
+
 
 def update_file(
-        file_name: str,
-        source: str,
-        target_location: str,
-        file_json: dict,
-        output_root: str,
-        processors: list,
-    ) -> str:
-        """
-        Updates content within a given file name. File name may either be a URL or S3 key.
-        Uploads updated file contents to updated_key within the given bucket.
-        """
+    file_name: str,
+    source: str,
+    target_location: str,
+    file_json: dict,
+    output_root: str,
+    processors: list,
+) -> str:
+    """
+    Updates content within a given file name. File name may either be a URL or S3 key.
+    Uploads updated file contents to updated_key within the given bucket.
+    """
 
-        for processor in processors:
-            file_json = processor.update_file(file_name=file_name, source=source, target_location=target_location, file_json=file_json, output_root=output_root)
-            
-        # Convert json to string for file upload
-        file_body = json.dumps(file_json)
-        return file_body
+    for processor in processors:
+        file_json = processor.update_file(
+            file_name=file_name,
+            source=source,
+            target_location=target_location,
+            file_json=file_json,
+            output_root=output_root,
+        )
+
+    # Convert json to string for file upload
+    file_body = json.dumps(file_json)
+    return file_body
+
 
 def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, processors: list):
     # Generate transformed key
@@ -132,6 +139,7 @@ def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, pro
     logging.info(f"Links successfully rewritten for file {key}")
 
     return updated_key
+
 
 def process_pulsar_message(msg: Message):
     """

@@ -1,6 +1,6 @@
+import copy
 import json
 from uuid import UUID
-import copy
 
 from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
@@ -13,6 +13,7 @@ OUTPUT_ROOT = "https://output.root.test"
 # Ensure you update this list when other transformers are added
 PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
+
 def test_workflows_with_only_cwl_input_valid():
     workflow_processor = [WorkflowProcessor()]
     stac_input_location = "test_data/test_workflows_with_only_cwl_input_valid.json"
@@ -23,7 +24,14 @@ def test_workflows_with_only_cwl_input_valid():
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=workflow_processor)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=workflow_processor,
+    )
 
     # Read output in as a dictionary
     output_json = json.loads(output)
@@ -35,6 +43,7 @@ def test_workflows_with_only_cwl_input_valid():
     # Check generated STAC is correct
     assert output_json == expected_json
 
+
 def test_workflows_with_only_cwl_input_invalid():
     workflow_processor = [WorkflowProcessor()]
     stac_input_location = "test_data/test_workflows_with_only_cwl_input_invalid.json"
@@ -45,7 +54,14 @@ def test_workflows_with_only_cwl_input_invalid():
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=workflow_processor)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=workflow_processor,
+    )
     # Read output in as a dictionary
     output_json = json.loads(output)
 
@@ -63,13 +79,14 @@ def test_workflows_with_only_cwl_input_invalid():
         if key in ("id", "title"):
             id_uuid = output_json[key].rsplit("__")[1]
             uuid_obj = UUID(id_uuid, version=4)
+            assert uuid_obj == uuid_obj
         else:
             assert output_json[key] == expected_json[key]
+
 
 def test_workflows_dont_overwrite():
     workflow_processor = [WorkflowProcessor()]
     stac_input_location = "test_data/test_workflows_dont_overwrite.json"
-    stac_expected_location = "test_data/test_workflows_dont_overwrite-expected.json"
 
     # Load test STAC data
     with open(stac_input_location, "r") as file:
@@ -77,13 +94,21 @@ def test_workflows_dont_overwrite():
         input_data = copy.deepcopy(file_json)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=workflow_processor)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=workflow_processor,
+    )
 
     # Read output in as a dictionary
     output_json = json.loads(output)
 
     # Check generated STAC is correct with no changes to input
     assert output_json == input_data
+
 
 def test_workflows_fill_blanks():
     workflow_processor = [WorkflowProcessor()]
@@ -95,7 +120,14 @@ def test_workflows_fill_blanks():
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=workflow_processor)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=workflow_processor,
+    )
     # Read output in as a dictionary
     output_json = json.loads(output)
 
@@ -116,7 +148,14 @@ def test_workflows_correct_self_link():
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=workflow_processor)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=workflow_processor,
+    )
 
     # Read output in as a dictionary
     output_json = json.loads(output)
@@ -138,7 +177,14 @@ def test_workflows_and_links_with_new_self_link():
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=PROCESSORS)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=PROCESSORS,
+    )
     # Read output in as a dictionary
     output_json = json.loads(output)
 
@@ -146,19 +192,29 @@ def test_workflows_and_links_with_new_self_link():
     with open(stac_expected_location, "r") as file:
         expected_json = json.load(file)
 
-   # Check generated STAC is correct
+    # Check generated STAC is correct
     assert output_json == expected_json
+
 
 def test_workflows_and_links_with_only_cwl_input_valid():
     stac_input_location = "test_data/test_workflows_with_only_cwl_input_valid.json"
-    stac_expected_location = "test_data/test_workflows_and_links_with_only_cwl_input_valid-expected.json"
+    stac_expected_location = (
+        "test_data/test_workflows_and_links_with_only_cwl_input_valid-expected.json"
+    )
 
     # Load test STAC data
     with open(stac_input_location, "r") as file:
         file_json = json.load(file)
 
     # Execute update file process
-    output = update_file(file_name=stac_input_location, source=SOURCE_PATH, target_location=OUTPUT_ROOT+TARGET, file_json=file_json, output_root=OUTPUT_ROOT, processors=PROCESSORS)
+    output = update_file(
+        file_name=stac_input_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_json=file_json,
+        output_root=OUTPUT_ROOT,
+        processors=PROCESSORS,
+    )
 
     # Read output in as a dictionary
     output_json = json.loads(output)
