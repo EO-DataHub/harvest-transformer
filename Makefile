@@ -11,13 +11,10 @@ dockerpush: dockerbuild testdocker
 	docker push ${DOCKERREPO}/${IMAGENAME}:${VERSION}
 
 test:
-	./venv/bin/pytest tests
+	./venv/bin/ptw harvest_transformer
 
 testonce:
 	./venv/bin/pytest
-
-pylint:
-	./venv/bin/pylint CHANGEME-package-names
 
 ruff:
 	./venv/bin/ruff .
