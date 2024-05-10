@@ -4,25 +4,35 @@
   "stac_extensions": [],
   "id": "workflow__example-convert-stac",
   "title": "workflow__example-convert-stac",
-  "description": "Example Convert Stac cwl script",
+  "description": "Convert URL",
   "keywords": ["workflow"],
-  "license": "N/A",
-  "providers": "N/A",
+  "license": "example_license",
+  "providers": "example_provider",
   "extent": {
     "spatial": { "bbox": [[-180, -90, 180, 90]] },
     "temporal": { "interval": [[null, null]] }
   },
   "summaries": {
+    "pricing": "Some information about pricing...",
+    "contact_information": "Contact this person for more information...",
+    "documentation": "Some additional documentation for this workflow...",
+    "examples": [
+      {
+        "fn": "resize",
+        "url": "https://some/example/image.png",
+        "size": "50%"
+      }
+    ],
     "inputs": {
       "fn": {
         "label": "the operation to perform",
         "doc": "the operation to perform",
         "type": "string"
       },
-      "stac": {
-        "label": "the image to convert as a STAC item",
-        "doc": "the image to convert as a STAC item",
-        "type": "Directory"
+      "url": {
+        "label": "the image to convert",
+        "doc": "the image to convert",
+        "type": "string"
       },
       "size": {
         "label": "the percentage for a resize operation",
@@ -41,9 +51,9 @@
   "links": [
     {
       "rel": "self",
-      "href": "https://output.root.test/target_directory/test_data/workflow-test-stac-1.json"
+      "href": "https://example.link.for.test/test_data/test_workflows_dont_overwrite.json"
     },
-    { "rel": "root", "href": "https://output.root.test" }
+    { "rel": "root", "href": "https://example.link.for.test" }
   ],
   "assets": {
     "cwl_script": {

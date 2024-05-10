@@ -1,0 +1,9 @@
+{
+  "assets": {
+    "cwl_script": {
+      "href": "path/to/local/cwl/script",
+      "roles": ["data"],
+      "type": "application/cwl"
+    }
+  }
+}

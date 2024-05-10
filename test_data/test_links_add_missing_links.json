@@ -25,28 +25,7 @@
     "updated": "2024-05-07T12:00:00Z",
     "created": "2024-05-07T12:00:00Z"
   },
-  "links": [
-    {
-      "rel": "self",
-      "type": "application/geo+json",
-      "href": "https://example.link.for.test/collections/example_collection/items/example_stac_feature"
-    },
-    {
-      "rel": "parent",
-      "type": "application/json",
-      "href": "https://example.link.for.test/collections/example_collection"
-    },
-    {
-      "rel": "collection",
-      "type": "application/json",
-      "href": "https://example.link.for.test/collections/example_collection"
-    },
-    {
-      "rel": "root",
-      "type": "application/json",
-      "href": "https://example.link.for.test/"
-    }
-  ],
+  "links": [],
   "assets": {},
   "cog": {
     "href": "https://example.data.location/example_collection/example_data.tif",

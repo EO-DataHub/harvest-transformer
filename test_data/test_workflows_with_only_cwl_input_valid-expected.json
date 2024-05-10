@@ -38,13 +38,7 @@
       }
     ]
   },
-  "links": [
-    {
-      "rel": "self",
-      "href": "https://output.root.test/target_directory/test_data/workflow-test-stac-1.json"
-    },
-    { "rel": "root", "href": "https://output.root.test" }
-  ],
+  "links": [],
   "assets": {
     "cwl_script": {
       "href": "https://raw.githubusercontent.com/tjellicoe-tpzuk/example-cwl-script/main/convert-stac-app.cwl",

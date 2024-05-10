@@ -1,17 +1,7 @@
 {
-  "type": "Collection",
-  "stac_version": "1.0.0",
-  "stac_extensions": [],
-  "id": "workflow__example-convert-stac",
-  "title": "workflow__example-convert-stac",
+  "id": "workflow__example-workflow-definition",
+  "title": "workflow__example-workflow-definition",
   "description": "Convert URL",
-  "keywords": ["workflow"],
-  "license": "example_license",
-  "providers": "example_provider",
-  "extent": {
-    "spatial": { "bbox": [[-180, -90, 180, 90]] },
-    "temporal": { "interval": [[null, null]] }
-  },
   "summaries": {
     "pricing": "Some information about pricing...",
     "contact_information": "Contact this person for more information...",
@@ -19,7 +9,7 @@
     "examples": [
       {
         "fn": "resize",
-        "url": "https://eoepca.org/media_portal/images/logo6_med.original.png",
+        "url": "https://some/example/image.png",
         "size": "50%"
       }
     ],
@@ -51,13 +41,13 @@
   "links": [
     {
       "rel": "self",
-      "href": "https://example.link.for.test/test_data/test_workflows_dont_overwrite.json"
+      "href": "https://example.link.for.test/test_data/test_workflows_fill_blanks.json"
     },
     { "rel": "root", "href": "https://example.link.for.test" }
   ],
   "assets": {
     "cwl_script": {
-      "href": "https://raw.githubusercontent.com/tjellicoe-tpzuk/example-cwl-script/main/convert-stac-app.cwl",
+      "href": "path/to/local/cwl/script",
       "roles": ["data"],
       "type": "application/cwl"
     }

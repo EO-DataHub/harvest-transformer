@@ -1,9 +1,0 @@
-{
-  "assets": {
-    "cwl_script": {
-      "href": "https://raw.githubusercontent.com/tjellicoe-tpzuk/example-cwl-script/main/convert-stac-app.cwl",
-      "roles": ["data"],
-      "type": "application/cwl"
-    }
-  }
-}

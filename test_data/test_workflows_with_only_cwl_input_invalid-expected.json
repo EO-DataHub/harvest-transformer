@@ -1,0 +1,24 @@
+{
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "stac_extensions": [],
+  "id": "workflow__4c445524-0933-410f-9213-5e75738a822e",
+  "title": "workflow__4c445524-0933-410f-9213-5e75738a822e",
+  "description": "N/A",
+  "keywords": ["workflow"],
+  "license": "N/A",
+  "providers": "N/A",
+  "extent": {
+    "spatial": { "bbox": [[-180, -90, 180, 90]] },
+    "temporal": { "interval": [[null, null]] }
+  },
+  "summaries": {},
+  "links": [],
+  "assets": {
+    "cwl_script": {
+      "href": "path/to/local/cwl/script",
+      "roles": ["data"],
+      "type": "application/cwl"
+    }
+  }
+}

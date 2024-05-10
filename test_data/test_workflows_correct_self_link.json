@@ -51,7 +51,7 @@
   "links": [
     {
       "rel": "self",
-      "href": "https://example.link.for.test/test_data/test_workflows_correct_self_link.json"
+      "href": "https://some.random.directory/filename"
     },
     { "rel": "root", "href": "https://example.link.for.test" }
   ],
