@@ -13,7 +13,8 @@ from pulsar import Client, Message
 
 from harvest_transformer.pulsar_message import harvest_schema
 
-from .file_processor import FileProcessor
+from .link_processor import LinkProcessor
+from .workflow_processor import WorkflowProcessor
 from .utils import get_file_from_url
 
 # configure boto3 logging
@@ -22,16 +23,6 @@ logging.getLogger("boto3").setLevel(logging.CRITICAL)
 
 # configure urllib logging
 logging.getLogger("urllib3").setLevel(logging.CRITICAL)
-
-parser = argparse.ArgumentParser()
-parser.add_argument("output_root", help="Root URL for EODHP", type=str)
-args = parser.parse_args()
-
-# Initiate Pulsar
-pulsar_url = os.environ.get("PULSAR_URL")
-client = Client(pulsar_url)
-consumer = client.subscribe(topic="harvested", subscription_name="transformer-subscription")
-producer = client.create_producer(topic="transformed", producer_name="transformer")
 
 
 if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
@@ -103,7 +94,44 @@ def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key:
         logging.info(f"File {file_location} is not valid JSON.")
         upload_file_s3(file_contents, bucket_name, updated_key)
         return
+    
 
+def update_file(
+        file_name: str,
+        source: str,
+        target_location: str,
+        file_json: dict,
+        output_root: str,
+        processors: list,
+    ) -> str:
+        """
+        Updates content within a given file name. File name may either be a URL or S3 key.
+        Uploads updated file contents to updated_key within the given bucket.
+        """
+
+        for processor in processors:
+            file_json = processor.update_file(file_name=file_name, source=source, target_location=target_location, file_json=file_json, output_root=output_root)
+            
+        # Convert json to string for file upload
+        file_body = json.dumps(file_json)
+        return file_body
+
+def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, processors: list):
+    # Generate transformed key
+    updated_key = transform_key(key, source, target)
+
+    # Compose target_location
+    target_location = args.output_root + target
+
+    # Apply transformers
+    file_json = get_file_contents_as_json(bucket_name, key, updated_key)
+    file_body = update_file(key, source, target_location, file_json, args.output_root, processors)
+
+    # Upload file to S3
+    upload_file_s3(file_body, bucket_name, updated_key)
+    logging.info(f"Links successfully rewritten for file {key}")
+
+    return updated_key
 
 def process_pulsar_message(msg: Message):
     """
@@ -127,27 +155,18 @@ def process_pulsar_message(msg: Message):
     output_data["updated_keys"] = []
     output_data["deleted_keys"] = []
 
-    file_processor = FileProcessor()
+    processors = [WorkflowProcessor(), LinkProcessor()]
 
     for key in data_dict.get("added_keys"):
-        updated_key = transform_key(key, source, target)
-        #
-        file_json = get_file_contents_as_json(bucket_name, key, updated_key)
-        file_body = file_processor.update_file(key, source, target, file_json, args.output_root)
-        # Upload file to S3
-        upload_file_s3(file_body, bucket_name, updated_key)
-        logging.info(f"Links successfully rewritten for file {key}")
+        updated_key = add_or_update_keys(key, source, target, bucket_name, processors)
         output_data["added_keys"].append(updated_key)
+
     for key in data_dict.get("updated_keys"):
-        updated_key = transform_key(key, source, target)
-        file_json = get_file_contents_as_json(bucket_name, key, updated_key)
-        file_body = file_processor.update_file(key, source, target, file_json, args.output_root)
-        # Upload file to S3
-        upload_file_s3(file_body, bucket_name, updated_key)
-        logging.info(f"Links successfully rewritten for file {key}")
+        updated_key = add_or_update_keys(key, source, target, bucket_name, processors)
         output_data["updated_keys"].append(updated_key)
 
     for key in data_dict.get("deleted_keys"):
+        # Generate transformed key
         updated_key = transform_key(key, source, target)
         # Remove file from S3
         delete_file_s3(bucket_name, updated_key)
@@ -177,4 +196,13 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("output_root", help="Root URL for EODHP", type=str)
+    args = parser.parse_args()
+
+    # Initiate Pulsar
+    pulsar_url = os.environ.get("PULSAR_URL")
+    client = Client(pulsar_url)
+    consumer = client.subscribe(topic="harvested", subscription_name="transformer-subscription")
+    producer = client.create_producer(topic="transformed", producer_name="transformer")
     main()
