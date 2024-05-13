@@ -14,7 +14,7 @@
 
 [project]
 name = "Harvest-Transformer"
-version = "0.1.0"
+version = "0.1.2"
 description = "Transform files recently updated by harvesters to be suitable for use in the EODH catalogue"
 readme = "README.md"
 
@@ -27,11 +27,13 @@ license = {file = "LICENSE"}
 # authored the project, and a valid email address corresponding to the name
 # listed.
 authors = [
-  {name = "Telespazio UK Ltd", email = "alex.palmer@telespazio.com" }
+  {name = "Telespazio UK Ltd", email = "alex.palmer@telespazio.com" },
+  {name = "Telespazio UK Ltd", email = "thomas.jellicoe@telespazio.com" }
 ]
 
 maintainers = [
-  {name = "Telespazio UK Ltd", email = "alex.palmer@telespazio.com" }
+  {name = "Telespazio UK Ltd", email = "alex.palmer@telespazio.com" },
+  {name = "Telespazio UK Ltd", email = "thomas.jellicoe@telespazio.com" }
 ]
 
 # Classifiers help users find your project by categorizing it.
