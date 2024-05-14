@@ -1,11 +1,26 @@
 # Changelog
 
-## v0.1.2 (14-05-2024)
+## v0.1.3 (14-05-2024)
 
 - Add harvester identification via optional TOPIC environment variable
 
-## v0.1.1 (25-04-2024)
 
+## v0.1.2 (07-05-2024)
+
+- Refactored code to better separate S3/Pulsar functionality from transformer code
+- Improved link correction in link processor
+- Separated transformer code for different transformers
+- Added tests for both link and workflow processors, including example STAC items
+
+## v0.1.1 (01-05-2024)
+
+- Added workflow transformer for STAC collections
+  - Generate STAC collection definition for workflows
+  - Add required fields for a collection
+  - Scrape CWL script (if provided) to fill gaps in definition
+  - Generate workflow ID (uuid) if not provided
+  - Upload transformed workflow to S3 bucket
+- Updated logging to streamline debug logs
 - Added workflows
 - Update dockerfile
 - Changed AWS connection
