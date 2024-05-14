@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.2 (14-05-2024)
+
+- Add harvester identification via optional TOPIC environment variable
+
 ## v0.1.1 (25-04-2024)
 
 - Added workflows

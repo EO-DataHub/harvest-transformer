@@ -19,11 +19,16 @@ parser = argparse.ArgumentParser()
 parser.add_argument("output_root", help="Root URL for EODHP", type=str)
 args = parser.parse_args()
 
+if os.getenv("TOPIC"):
+    identifier = "_" + os.getenv("TOPIC")
+else:
+    identifier = ""
+
 # Initiate Pulsar
 pulsar_url = os.environ.get("PULSAR_URL")
 client = Client(pulsar_url)
-consumer = client.subscribe(topic="harvested", subscription_name="transformer-subscription")
-producer = client.create_producer(topic="transformed", producer_name="transformer")
+consumer = client.subscribe(topic="harvested", subscription_name=f"transformer-subscription{identifier}")
+producer = client.create_producer(topic="transformed", producer_name=f"transformer{identifier}")
 
 
 if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
