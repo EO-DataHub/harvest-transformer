@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.3 (14-05-2024)
+
+- Add harvester identification via optional TOPIC environment variable
+
+
 ## v0.1.2 (07-05-2024)
 
 - Refactored code to better separate S3/Pulsar functionality from transformer code
