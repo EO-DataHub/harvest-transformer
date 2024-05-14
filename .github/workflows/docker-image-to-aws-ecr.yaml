@@ -3,12 +3,12 @@ name: Publish Docker image to AWS ECR
 on:
   push:
     tags:
-      - "v[0-9]+"
-      - "v[0-9]+-*"
-      - "v[0-9]+.[0-9]+"
-      - "v[0-9]+.[0-9]+-*"
-      - "v[0-9]+.[0-9]+.[0-9]+"
-      - "v[0-9]+.[0-9]+.[0-9]+-*"
+      - 'v[0-9]+'
+      - 'v[0-9]+-*'
+      - 'v[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+-*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
     branches:
       - main
 
@@ -44,9 +44,9 @@ jobs:
       - name: Security check - Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "fs"
+          scan-type: 'fs'
           ignore-unfixed: true
-          vuln-type: "os,library"
+          vuln-type: 'os,library'
           severity: "CRITICAL,HIGH"
 
       - name: Set up Python
