@@ -24,7 +24,6 @@ logging.getLogger("boto3").setLevel(logging.CRITICAL)
 # configure urllib logging
 logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
-
 if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
     session = boto3.session.Session(
         aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
