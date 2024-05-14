@@ -27,7 +27,9 @@ else:
 # Initiate Pulsar
 pulsar_url = os.environ.get("PULSAR_URL")
 client = Client(pulsar_url)
-consumer = client.subscribe(topic="harvested", subscription_name=f"transformer-subscription{identifier}")
+consumer = client.subscribe(
+    topic="harvested", subscription_name=f"transformer-subscription{identifier}"
+)
 producer = client.create_producer(topic="transformed", producer_name=f"transformer{identifier}")
 
 
