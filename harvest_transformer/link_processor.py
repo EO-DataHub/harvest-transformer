@@ -88,6 +88,10 @@ class LinkProcessor:
         Uploads updated file contents to updated_key within the given bucket.
         """
 
+        # Only concerned with STAC data here, other files can be uploaded as is
+        if not isinstance(file_json, dict):
+            return file_json
+
         # Delete unnecessary sections
         file_json = self.delete_sections(file_json)
         try:

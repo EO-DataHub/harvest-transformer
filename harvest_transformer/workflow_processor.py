@@ -74,6 +74,14 @@ class WorkflowProcessor:
 
     def update_file(self, file_name: str, source: str, file_json: dict, **kwargs) -> dict:
 
+        """
+        Updates file contents for workflow to be a STAC collection, including scraping CWL script if provided.
+        """
+
+        # Only concerned with STAC data here, other files can be uploaded as is
+        if not isinstance(file_json, dict):
+            return file_json
+
         if ("assets" not in file_json) or (
             "assets" in file_json and "cwl_script" not in file_json["assets"]
         ):
