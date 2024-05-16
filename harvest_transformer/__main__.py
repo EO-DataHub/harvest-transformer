@@ -92,8 +92,7 @@ def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key:
     except ValueError:
         # Invalid JSON. Upload without changes
         logging.info(f"File {file_location} is not valid JSON.")
-        upload_file_s3(file_contents, bucket_name, updated_key)
-        return
+        return file_contents
 
 
 def update_file(
@@ -118,8 +117,10 @@ def update_file(
             output_root=output_root,
         )
 
+    file_body = file_json
     # Convert json to string for file upload
-    file_body = json.dumps(file_json)
+    if isinstance(file_json, dict):
+        file_body = json.dumps(file_body)
     return file_body
 
 
