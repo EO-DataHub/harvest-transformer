@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 import os
+from typing import Union
 from urllib.parse import urlparse
 
 import boto3
@@ -89,17 +90,16 @@ def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key:
     try:
         return json.loads(file_contents)
     except ValueError:
-        # Invalid JSON. Upload without changes
+        # Invalid JSON. File returned as is.
         logging.info(f"File {file_location} is not valid JSON.")
-        upload_file_s3(file_contents, bucket_name, updated_key)
-        return
+        return file_contents
 
 
 def update_file(
     file_name: str,
     source: str,
     target_location: str,
-    file_json: dict,
+    file_body: Union[dict, str],
     output_root: str,
     processors: list,
 ) -> str:
@@ -109,16 +109,17 @@ def update_file(
     """
 
     for processor in processors:
-        file_json = processor.update_file(
+        file_body = processor.update_file(
             file_name=file_name,
             source=source,
             target_location=target_location,
-            file_json=file_json,
+            file_body=file_body,
             output_root=output_root,
         )
 
     # Convert json to string for file upload
-    file_body = json.dumps(file_json)
+    if isinstance(file_body, dict):
+        file_body = json.dumps(file_body)
     return file_body
 
 
@@ -130,8 +131,8 @@ def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, pro
     target_location = args.output_root + target
 
     # Apply transformers
-    file_json = get_file_contents_as_json(bucket_name, key, updated_key)
-    file_body = update_file(key, source, target_location, file_json, args.output_root, processors)
+    file_body = get_file_contents_as_json(bucket_name, key, updated_key)
+    file_body = update_file(key, source, target_location, file_body, args.output_root, processors)
 
     # Upload file to S3
     upload_file_s3(file_body, bucket_name, updated_key)

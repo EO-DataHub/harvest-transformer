@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 from urllib.parse import urljoin, urlparse
 
 from .workflow_processor import WorkflowProcessor
@@ -79,7 +80,7 @@ class LinkProcessor:
         file_name: str,
         source: str,
         target_location: str,
-        file_json: dict,
+        file_body: Union[dict, str],
         output_root: str,
         **kwargs,
     ) -> dict:
@@ -88,19 +89,23 @@ class LinkProcessor:
         Uploads updated file contents to updated_key within the given bucket.
         """
 
+        # Only concerned with STAC data here, other files can be uploaded as is
+        if not isinstance(file_body, dict):
+            return file_body
+
         # Delete unnecessary sections
-        file_json = self.delete_sections(file_json)
+        file_body = self.delete_sections(file_body)
         try:
             self_link = [
-                link.get("href") for link in file_json.get("links") if link.get("rel") == "self"
+                link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
             ][0]
         except (TypeError, IndexError):
             logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
-            self.add_link_if_missing(file_json, "self", source + file_name)
+            self.add_link_if_missing(file_body, "self", source + file_name)
             self_link = [
-                link.get("href") for link in file_json.get("links") if link.get("rel") == "self"
+                link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
             ][0]
 
         output_self = self_link.replace(source, target_location)
@@ -110,13 +115,13 @@ class LinkProcessor:
                 f"self link {self_link}, source {source}, and target {target_location}. "
                 f"Unable to rewrite links."
             )
-            return file_json
+            return file_body
 
         # Update links to STAC best practices
-        file_json = self.add_missing_links(file_json, output_root, output_self)
+        file_body = self.add_missing_links(file_body, output_root, output_self)
 
         # Update links to refer to EODH
-        file_json = self.rewrite_links(file_json, source, target_location, output_self, output_root)
+        file_body = self.rewrite_links(file_body, source, target_location, output_self, output_root)
 
         # Return json for further transform and upload
-        return file_json
+        return file_body
