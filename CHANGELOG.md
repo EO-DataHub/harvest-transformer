@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.1.5 (21-05-2024)
+
+- Bugfix for non-json data files:
+  - Files will be uploaded as found with no transformation
+
+## v0.1.4 (14-05-2024)
+
+- Extend harvester identifier to rest of pulsar message
+
+## v0.1.3 (14-05-2024)
+
+- Add harvester identification via optional TOPIC environment variable
+
 ## v0.1.2 (07-05-2024)
 
 - Refactored code to better separate S3/Pulsar functionality from transformer code
