@@ -26,7 +26,7 @@ def test_links_replacement_only():
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_json=json_data,
+        file_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
     )
@@ -85,7 +85,7 @@ def test_links_add_missing_links():
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_json=json_data,
+        file_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
     )
@@ -118,7 +118,7 @@ def test_workflow_does_not_alter_non_workflows():
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_json=json_data,
+        file_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
     )

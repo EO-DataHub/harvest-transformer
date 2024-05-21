@@ -1,6 +1,7 @@
 import collections
 import logging
 import uuid
+from typing import Union
 
 import yaml
 
@@ -72,22 +73,23 @@ class WorkflowProcessor:
 
         return missing_fields
 
-    def update_file(self, file_name: str, source: str, file_json: dict, **kwargs) -> dict:
-
+    def update_file(
+        self, file_name: str, source: str, file_body: Union[dict, str], **kwargs
+    ) -> dict:
         """
         Updates file contents for workflow to be a STAC collection, including scraping CWL script if provided.
         """
 
         # Only concerned with STAC data here, other files can be uploaded as is
-        if not isinstance(file_json, dict):
-            return file_json
+        if not isinstance(file_body, dict):
+            return file_body
 
-        if ("assets" not in file_json) or (
-            "assets" in file_json and "cwl_script" not in file_json["assets"]
+        if ("assets" not in file_body) or (
+            "assets" in file_body and "cwl_script" not in file_body["assets"]
         ):
-            return file_json
+            return file_body
 
-        stac_collection_raw = file_json
+        stac_collection_raw = file_body
 
         scrape_cwl = True
 
