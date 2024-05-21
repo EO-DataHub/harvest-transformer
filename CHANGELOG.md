@@ -1,5 +1,6 @@
 # Changelog
 
+
 ## v0.1.5 (21-05-2024)
 
 - Bugfix for non-json data files:

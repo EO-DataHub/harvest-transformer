@@ -25,7 +25,6 @@ logging.getLogger("boto3").setLevel(logging.CRITICAL)
 # configure urllib logging
 logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
-
 if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
     session = boto3.session.Session(
         aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
@@ -207,11 +206,16 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("output_root", help="Root URL for EODHP", type=str)
-    args = parser.parse_args()
-
+    args = parser.parse_args()    
+    
+    if os.getenv("TOPIC"):
+        identifier = "_" + os.getenv("TOPIC")
+    else:
+        identifier = ""
+    
     # Initiate Pulsar
     pulsar_url = os.environ.get("PULSAR_URL")
     client = Client(pulsar_url)
-    consumer = client.subscribe(topic="harvested", subscription_name="transformer-subscription")
-    producer = client.create_producer(topic="transformed", producer_name="transformer")
+    consumer = client.subscribe(topic=f"harvested{identifier}", subscription_name=f"transformer-subscription{identifier}")
+    producer = client.create_producer(topic=f"transformed{identifier}", producer_name=f"transformer{identifier}")
     main()
