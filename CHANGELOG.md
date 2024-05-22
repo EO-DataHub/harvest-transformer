@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v0.1.6 (21-05-2024)
+
+- Move functionality into eodhp-utils
+
 ## v0.1.5 (21-05-2024)
 
 - Bugfix for non-json data files:
