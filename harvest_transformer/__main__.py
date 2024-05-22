@@ -10,7 +10,7 @@ import boto3
 from botocore.exceptions import ClientError
 from pulsar import Client, Message
 
-from harvest_transformer.pulsar_message import harvest_schema
+from eodhp_utils.pulsar.messages import get_data, harvest_schema
 
 from .link_processor import LinkProcessor
 from .utils import get_file_from_url
@@ -144,7 +144,7 @@ def process_pulsar_message(msg: Message):
     Update files from given message where required,
     and send a Pulsar message with updated files
     """
-    data_dict = eodhp_utils.get_data(msg, harvest_schema)
+    data_dict = get_data(msg, harvest_schema)
 
     bucket_name = data_dict.get("bucket_name")
     source = data_dict.get("source")
