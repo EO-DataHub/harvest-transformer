@@ -14,7 +14,7 @@
 
 [project]
 name = "Harvest-Transformer"
-version = "0.1.4"
+version = "0.1.6"
 description = "Transform files recently updated by harvesters to be suitable for use in the EODH catalogue"
 readme = "README.md"
 
