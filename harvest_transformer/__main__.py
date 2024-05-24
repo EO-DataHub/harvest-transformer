@@ -8,9 +8,8 @@ from urllib.parse import urlparse
 
 import boto3
 from botocore.exceptions import ClientError
+from eodhp_utils.pulsar.messages import generate_harvest_schema, get_message_data
 from pulsar import Client, Message
-
-from eodhp_utils.pulsar.messages import get_message_data, generate_harvest_schema
 
 from .link_processor import LinkProcessor
 from .utils import get_file_from_url
