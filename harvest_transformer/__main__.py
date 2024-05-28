@@ -7,12 +7,9 @@ from typing import Union
 from urllib.parse import urlparse
 
 import boto3
-import jsonschema
-import jsonschema.exceptions
 from botocore.exceptions import ClientError
+from eodhp_utils.pulsar.messages import generate_harvest_schema, get_message_data
 from pulsar import Client, Message
-
-from harvest_transformer.pulsar_message import harvest_schema
 
 from .link_processor import LinkProcessor
 from .utils import get_file_from_url
@@ -146,13 +143,8 @@ def process_pulsar_message(msg: Message):
     Update files from given message where required,
     and send a Pulsar message with updated files
     """
-    data = msg.data().decode("utf-8")
-    data_dict = json.loads(data.replace("'", '"'))
-    try:
-        jsonschema.validate(data_dict, harvest_schema)
-    except jsonschema.exceptions.ValidationError as e:
-        logging.error(f"Validation failed: {e}")
-        raise
+    harvest_schema = generate_harvest_schema()
+    data_dict = get_message_data(msg, harvest_schema)
 
     bucket_name = data_dict.get("bucket_name")
     source = data_dict.get("source")
@@ -206,16 +198,20 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("output_root", help="Root URL for EODHP", type=str)
-    args = parser.parse_args()    
-    
+    args = parser.parse_args()
+
     if os.getenv("TOPIC"):
         identifier = "_" + os.getenv("TOPIC")
     else:
         identifier = ""
-    
+
     # Initiate Pulsar
     pulsar_url = os.environ.get("PULSAR_URL")
     client = Client(pulsar_url)
-    consumer = client.subscribe(topic=f"harvested{identifier}", subscription_name=f"transformer-subscription{identifier}")
-    producer = client.create_producer(topic=f"transformed{identifier}", producer_name=f"transformer{identifier}")
+    consumer = client.subscribe(
+        topic=f"harvested{identifier}", subscription_name=f"transformer-subscription{identifier}"
+    )
+    producer = client.create_producer(
+        topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
+    )
     main()
