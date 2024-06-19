@@ -55,7 +55,7 @@ def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
     transformed_key = file_name.replace("git-harvester", "transformed", 1)
     if transformed_key == file_name:
-        transformed_key = "transformed" + file_name.replace(source, target)
+        transformed_key = "transformed/" + file_name.replace(source, target)
     return transformed_key
 
 
