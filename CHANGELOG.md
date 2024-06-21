@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.7 (21-06-2024)
+
+- Correct transform key to add new `tranformed/` directory to transformed files.
+
 
 ## v0.1.6 (21-05-2024)
 
