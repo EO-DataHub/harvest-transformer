@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.1.7 (02-07-2024)
+
+- Ensure transformed files are output into the `transformed/` directory.
 
 ## v0.1.6 (21-05-2024)
 
