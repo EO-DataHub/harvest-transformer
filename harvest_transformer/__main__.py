@@ -50,12 +50,28 @@ def delete_file_s3(bucket: str, key: str):
     except ClientError as e:
         logging.error(f"File deletion failed: {e}")
 
+def reformat_key(key: str) -> str:
+    """Reformat key to conform to nested catalog/collections standard for EODHP"""
+    key = key.replace("/items", "")
+    key = key.replace("/collections", "")
+
+    if not key.endswith(".json"):
+        key = key + ".json"
+
+    return key
+
+def get_new_catalog_id_from_target(target: str) -> str:
+    """Extract catalog ID from target"""
+    return target.split("/")[-1]
+
 
 def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
     transformed_key = file_name.replace("git-harvester", "transformed", 1)
     if transformed_key == file_name:
         transformed_key = "transformed/" + file_name.replace(source, target)
+    
+    transformed_key = reformat_key(transformed_key)
     return transformed_key
 
 
@@ -129,6 +145,11 @@ def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, pro
 
     # Apply transformers
     file_body = get_file_contents_as_json(bucket_name, key, updated_key)
+
+    # Update catalog ID if necessary
+    if file_body.get("type") == "Catalog":
+        file_body["id"] = get_new_catalog_id_from_target(target)
+
     file_body = update_file(key, source, target_location, file_body, args.output_root, processors)
 
     # Upload file to S3
