@@ -153,6 +153,7 @@ def add_or_update_keys(
     bucket_name: str,
     processors: list,
 ):
+    """Load file from given key as json and update by applying list of processors"""
 
     # Compose target_location
     target_location = output_root + target
