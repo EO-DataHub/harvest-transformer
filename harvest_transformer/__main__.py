@@ -56,6 +56,9 @@ def reformat_key(key: str) -> str:
     key = key.replace("/items", "")
     key = key.replace("/collections", "")
 
+    if key.endswith("/"):
+        key = key[:-1]
+
     if not key.endswith(".json"):
         key = key + ".json"
 
