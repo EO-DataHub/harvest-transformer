@@ -67,7 +67,10 @@ def reformat_key(key: str) -> str:
 
 def get_new_catalog_id_from_target(target: str) -> str:
     """Extract catalog ID from target"""
-    return target.split("/")[-1]
+    new_id = target.split("/")[-1]
+    if new_id == "":
+        return None
+    return new_id
 
 
 def transform_key(file_name: str, source: str, target: str) -> str:
@@ -144,7 +147,10 @@ def update_catalog_id(file_body: dict, target: str) -> dict:
     """Update catalog ID in file_body to match target"""
     if file_body.get("type") != "Catalog":
         return file_body
-    file_body["id"] = get_new_catalog_id_from_target(target)
+    new_catalog_id = get_new_catalog_id_from_target(target)
+    # Update catalog_id if new one is provided in target
+    if new_catalog_id:
+        file_body["id"] = new_catalog_id
     return file_body
 
 
