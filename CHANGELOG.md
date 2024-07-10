@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.8 (09-07-2024)
+
+- Support nested catalog harvesting
+  - Update to transform key logic to generate correct key structure for nested catalogs
+  - Integration with stac-harvesters to generate keys from STAC URLs
+  - Integration with STAC-FastApi ingester to provide correct STAC file keys
+- Code cleanup
+  - Update/add unit tests for new functions
+  - Code restructure to support more granular unit testing
+
 ## v0.1.7 (02-07-2024)
 
 - Ensure transformed files are output into the `transformed/` directory.

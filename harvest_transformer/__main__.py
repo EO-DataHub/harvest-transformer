@@ -51,11 +51,34 @@ def delete_file_s3(bucket: str, key: str):
         logging.error(f"File deletion failed: {e}")
 
 
+def reformat_key(key: str) -> str:
+    """Reformat key to conform to nested catalog/collections standard for EODHP"""
+    key = key.replace("/items", "")
+    key = key.replace("/collections", "")
+
+    if key.endswith("/"):
+        key = key[:-1]
+
+    if not key.endswith(".json"):
+        key = key + ".json"
+
+    return key
+
+
+def get_new_catalog_id_from_target(target: str) -> str:
+    """Extract catalog ID from target"""
+    new_id = target.split("/")[-1]
+    if new_id == "":
+        return None
+    return new_id
+
+
 def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
     transformed_key = file_name.replace("git-harvester", "transformed", 1)
     if transformed_key == file_name:
         transformed_key = "transformed/" + file_name.replace(source, target)
+    transformed_key = reformat_key(transformed_key)
     return transformed_key
 
 
@@ -78,7 +101,7 @@ def is_valid_url(url: str) -> bool:
         return False
 
 
-def get_file_contents_as_json(bucket_name: str, file_location: str, updated_key: str) -> dict:
+def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> dict:
     """Returns JSON object of contents located at file_location"""
     if is_valid_url(file_location):
         file_contents = get_file_from_url(file_location)
@@ -120,25 +143,42 @@ def update_file(
     return file_body
 
 
-def add_or_update_keys(key: str, source: str, target: str, bucket_name: str, processors: list):
-    # Generate transformed key
-    updated_key = transform_key(key, source, target)
+def update_catalog_id(file_body: dict, target: str) -> dict:
+    """Update catalog ID in file_body to match target"""
+    if file_body.get("type") != "Catalog":
+        return file_body
+    new_catalog_id = get_new_catalog_id_from_target(target)
+    # Update catalog_id if new one is provided in target
+    if new_catalog_id:
+        file_body["id"] = new_catalog_id
+    return file_body
+
+
+def add_or_update_keys(
+    key: str,
+    source: str,
+    target: str,
+    output_root: str,
+    bucket_name: str,
+    processors: list,
+):
+    """Load file from given key as json and update by applying list of processors"""
 
     # Compose target_location
-    target_location = args.output_root + target
+    target_location = output_root + target
 
     # Apply transformers
-    file_body = get_file_contents_as_json(bucket_name, key, updated_key)
-    file_body = update_file(key, source, target_location, file_body, args.output_root, processors)
+    file_body = get_file_contents_as_json(key, bucket_name)
 
-    # Upload file to S3
-    upload_file_s3(file_body, bucket_name, updated_key)
-    logging.info(f"Links successfully rewritten for file {key}")
+    # Update catalog ID if necessary
+    file_body = update_catalog_id(file_body, target)
 
-    return updated_key
+    file_body = update_file(key, source, target_location, file_body, output_root, processors)
+
+    return file_body
 
 
-def process_pulsar_message(msg: Message):
+def process_pulsar_message(msg: Message, output_root: str):
     """
     Update files from given message where required,
     and send a Pulsar message with updated files
@@ -158,11 +198,21 @@ def process_pulsar_message(msg: Message):
     processors = [WorkflowProcessor(), LinkProcessor()]
 
     for key in data_dict.get("added_keys"):
-        updated_key = add_or_update_keys(key, source, target, bucket_name, processors)
+        updated_key = transform_key(key, source, target)
+        file_body = add_or_update_keys(key, source, target, output_root, bucket_name, processors)
+
+        # Upload file to S3
+        upload_file_s3(file_body, bucket_name, updated_key)
+        logging.info(f"Links successfully rewritten for file {key}")
         output_data["added_keys"].append(updated_key)
 
     for key in data_dict.get("updated_keys"):
-        updated_key = add_or_update_keys(key, source, target, bucket_name, processors)
+        updated_key = transform_key(key, source, target)
+        file_body = add_or_update_keys(key, source, target, output_root, bucket_name, processors)
+
+        # Upload file to S3
+        upload_file_s3(file_body, bucket_name, updated_key)
+        logging.info(f"Links successfully rewritten for file {key}")
         output_data["updated_keys"].append(updated_key)
 
     for key in data_dict.get("deleted_keys"):
@@ -172,9 +222,7 @@ def process_pulsar_message(msg: Message):
         delete_file_s3(bucket_name, updated_key)
         output_data["deleted_keys"].append(updated_key)
 
-    # Send message to Pulsar
-    producer.send((json.dumps(output_data)).encode("utf-8"))
-    logging.info(f"Sent transformed message {output_data}")
+    return output_data
 
 
 def main():
@@ -184,8 +232,13 @@ def main():
     while True:
         msg = consumer.receive()
         try:
+            # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
-            process_pulsar_message(msg)
+            output_data = process_pulsar_message(msg, args.output_root)
+
+            # Send message to Pulsar
+            producer.send((json.dumps(output_data)).encode("utf-8"))
+            logging.info(f"Sent transformed message {output_data}")
 
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
