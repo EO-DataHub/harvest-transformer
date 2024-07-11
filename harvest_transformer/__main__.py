@@ -67,7 +67,12 @@ def reformat_key(key: str) -> str:
 
 def get_new_catalog_id_from_target(target: str) -> str:
     """Extract catalog ID from target"""
-    new_id = target.split("/")[-1]
+    # Currently take catalog_id directly under top-level catalog,
+    # as current harvested catalogs do not support nesting
+    try:
+        new_id = target.split("/")[1]
+    except IndexError:
+        return None
     if new_id == "":
         return None
     return new_id
@@ -143,11 +148,24 @@ def update_file(
     return file_body
 
 
-def update_catalog_id(file_body: dict, target: str) -> dict:
+def is_this_root_catalog(file_body: dict, key: str) -> bool:
+    """Check if the current STAC file is also the root catalog definition"""
+    cat_links = file_body.get("links")
+    if not cat_links:
+        return False
+    for link in cat_links:
+        if link.get("rel") == "root":
+            if link.get("href") == key:
+                return True
+    return False
+
+
+def update_catalog_id(file_body: dict, target: str, key: str) -> dict:
     """Update catalog ID in file_body to match target"""
-    if file_body.get("type") != "Catalog":
+    if file_body.get("type") != "Catalog" or not is_this_root_catalog(file_body, key):
         return file_body
     new_catalog_id = get_new_catalog_id_from_target(target)
+
     # Update catalog_id if new one is provided in target
     if new_catalog_id:
         file_body["id"] = new_catalog_id
@@ -171,7 +189,7 @@ def add_or_update_keys(
     file_body = get_file_contents_as_json(key, bucket_name)
 
     # Update catalog ID if necessary
-    file_body = update_catalog_id(file_body, target)
+    file_body = update_catalog_id(file_body, target, key)
 
     file_body = update_file(key, source, target_location, file_body, output_root, processors)
 
