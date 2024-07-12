@@ -69,10 +69,8 @@ def get_new_catalog_id_from_target(target: str) -> str:
     """Extract catalog ID from target"""
     # Currently take catalog_id directly under top-level catalog,
     # as current harvested catalogs do not support nesting
-    try:
-        new_id = target.split("/")[1]
-    except IndexError:
-        return None
+    new_id = target.split("/")[-1]
+
     if new_id == "":
         return None
     return new_id
@@ -155,7 +153,9 @@ def is_this_root_catalog(file_body: dict, key: str) -> bool:
         return False
     for link in cat_links:
         if link.get("rel") == "root":
-            if link.get("href") == key:
+            trimmed_link = link.get("href")[:-1] if link.get("href").endswith("/") else link.get("href")
+            trimmed_key = key[:-1] if key.endswith("/") else key
+            if trimmed_link == trimmed_key:
                 return True
     return False
 
