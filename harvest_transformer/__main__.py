@@ -153,8 +153,8 @@ def is_this_root_catalog(file_body: dict, key: str) -> bool:
         return False
     for link in cat_links:
         if link.get("rel") == "root":
-            trimmed_link = link.get("href")[:-1] if link.get("href").endswith("/") else link.get("href")
-            trimmed_key = key[:-1] if key.endswith("/") else key
+            trimmed_link = link.rstrip("/")
+            trimmed_key = key.rstrip("/")
             if trimmed_link == trimmed_key:
                 return True
     return False
