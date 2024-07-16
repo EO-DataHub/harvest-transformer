@@ -45,7 +45,7 @@ A number of `make` targets are defined:
 - `make testonce`: run tests once
 - `make lint`: lint and reformat
 - `make requirements`: Update requirements.txt and requirements-dev.txt from pyproject.toml
-- `make requirements`: Like `make requirements` but uses `-U` to update to the latest allowed version of everything
+- `make requirements-update`: Like `make requirements` but uses `-U` to update to the latest allowed version of everything
 - `make dockerbuild`: build a `latest` Docker image (use `make dockerbuild `VERSION=1.2.3` for a release image)
 - `make dockerpush`: push a `latest` Docker image (again, you can add `VERSION=1.2.3`) - normally this should be done
   only via the build system and its GitHub actions.
