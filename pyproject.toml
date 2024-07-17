@@ -83,7 +83,18 @@ dependencies = [
 # Similar to `dependencies` above, these must be valid existing
 # projects.
 [project.optional-dependencies] # Optional
-dev = ["pip-tools", "pytest", "pytest-xdist", "pytest-mock", "pytest-watcher", "black", "ruff"]
+dev = [
+    "pip-tools",
+    "pytest",
+    "pytest-xdist",
+    "pytest-mock",
+    "pytest-watcher",
+    "black",
+    "ruff",
+    "isort",
+    "validate-pyproject[all]",
+    "pre-commit",
+]
 
 # List URLs that are relevant to your project
 #
@@ -122,7 +133,9 @@ target-version = ['py311']
 [tool.ruff]
 line-length = 110
 target-version = "py311"
-select = ["E", "F", "B", "W"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "W", "I"]
 
 exclude = [
     ".bzr",
@@ -156,3 +169,6 @@ disable = '''
     too-many-instance-attributes,
     logging-fstring-interpolation,
 '''
+
+[tool.isort]
+profile = "black"
