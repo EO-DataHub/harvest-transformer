@@ -153,7 +153,11 @@ def is_this_root_catalog(file_body: dict, key: str) -> bool:
         return False
     for link in cat_links:
         if link.get("rel") == "root":
-            trimmed_link = link.rstrip("/")
+            try:
+                trimmed_link = link.get("href").rstrip("/")
+            except AttributeError as e:
+                logging.warning(f"Error occurred during root link extraction for {key}: {e}")
+                return False
             trimmed_key = key.rstrip("/")
             if trimmed_link == trimmed_key:
                 return True
