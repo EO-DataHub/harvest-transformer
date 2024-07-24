@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9 (24-07-2024)
+
+- Bugfix to correct Catalog ID update logic:
+  - Catalog IDs only updated for the root catalog in the data selected for harvest
+  - Addressed previous issue with non-root catalogs being updated with new IDs
+
 ## v0.1.8 (09-07-2024)
 
 - Support nested catalog harvesting
