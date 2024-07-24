@@ -61,30 +61,49 @@ def test_get_new_catalog_id_from_target():
 
 
 def test_update_catalog_id_catalog():
-    file_body = {"id": "test_id", "type": "Catalog", "title": "test_title"}
-    target = "new_test_id"
+    file_body = {
+        "id": "test_id",
+        "type": "Catalog",
+        "title": "test_title",
+        "links": [{"rel": "root", "href": "https://test-key/catalog/"}],
+    }
+    new_id = "updated_test_id"
+    target = f"test-catalog/{new_id}"
+    key = "https://test-key/catalog/"
 
-    new_file_body = update_catalog_id(file_body, target)
+    new_file_body = update_catalog_id(file_body, target, key)
 
     assert new_file_body["type"] == file_body["type"]
     assert new_file_body["title"] == file_body["title"]
-    assert new_file_body["id"] == target
+    assert new_file_body["id"] == new_id
 
 
 def test_update_catalog_id_collection():
-    file_body = {"id": "test_id", "type": "Collection", "title": "test_title"}
-    target = "new_test_id"
+    file_body = {
+        "id": "test_id",
+        "type": "Catalog",
+        "title": "test_title",
+        "links": [{"rel": "root", "href": "https://test-key/catalog/"}],
+    }
+    target = "test-catalog/new_test_id"
+    key = "https://test-key/catalog/collection"
 
-    new_file_body = update_catalog_id(file_body, target)
+    new_file_body = update_catalog_id(file_body, target, key)
 
     assert new_file_body == file_body
 
 
 def test_update_catalog_id_item():
-    file_body = {"id": "test_id", "type": "Feature", "title": "test_title"}
-    target = "new_test_id"
+    file_body = {
+        "id": "test_id",
+        "type": "Catalog",
+        "title": "test_title",
+        "links": [{"rel": "root", "href": "https://test-key/catalog/"}],
+    }
+    target = "test-catalog/new_test_id"
+    key = "https://test-key/catalog/collection/item"
 
-    new_file_body = update_catalog_id(file_body, target)
+    new_file_body = update_catalog_id(file_body, target, key)
 
     assert new_file_body == file_body
 
