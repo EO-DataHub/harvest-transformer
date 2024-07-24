@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.9 (24-07-2024)
+## v0.1.9 (24-07-2024)
 
 - Bugfix to correct Catalog ID update logic:
   - Catalog IDs only updated for the root catalog in the data selected for harvest
