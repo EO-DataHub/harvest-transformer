@@ -1,7 +1,7 @@
 .PHONY: dockerbuild dockerpush test testonce ruff black lint isort pre-commit-check requirements-update requirements setup
 VERSION ?= latest
 IMAGENAME = harvest-transformer
-DOCKERREPO ?= 312280911266.dkr.ecr.eu-west-2.amazonaws.com
+DOCKERREPO ?= public.ecr.aws/n1b3o1k2/ukeodhp
 
 dockerbuild:
 	DOCKER_BUILDKIT=1 docker build -t ${IMAGENAME}:${VERSION} .
@@ -44,7 +44,7 @@ requirements-update: venv
 
 venv:
 	virtualenv -p python3.11 venv
-	./venv/bin/python -m ensurepip -U 
+	./venv/bin/python -m ensurepip -U
 	./venv/bin/pip3 install pip-tools
 
 .make-venv-installed: venv requirements.txt requirements-dev.txt
@@ -53,6 +53,7 @@ venv:
 
 .git/hooks/pre-commit:
 	./venv/bin/pre-commit install
+	curl -o .pre-commit-config.yaml https://raw.githubusercontent.com/EO-DataHub/github-actions/main/.pre-commit-config-python.yaml
 
 setup: venv requirements .make-venv-installed .git/hooks/pre-commit
 

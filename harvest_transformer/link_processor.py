@@ -9,7 +9,6 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-
     def is_valid_url(self, url: str) -> bool:
         """Checks if a given URL is valid"""
         try:
