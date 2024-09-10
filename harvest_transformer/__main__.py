@@ -280,8 +280,9 @@ def main():
     Poll for new Pulsar messages and trigger transform process
     """
     while True:
-        msg = consumer.receive()
         try:
+            msg = consumer.receive()
+
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
             output_data = process_pulsar_message(msg, args.output_root)
@@ -299,7 +300,7 @@ def main():
         except Exception as e:
             # Permanent error, acknowledge to remove the message
             logging.exception(f"Permanent error occurred during transform: {e}")
-            consumer.acknowledge(msg)
+            consumer.negative_acknowledge(msg)
 
 
 def check_s3_access():
@@ -326,6 +327,7 @@ if __name__ == "__main__":
     pulsar_url = os.environ.get("PULSAR_URL")
     client = Client(pulsar_url)
     max_redelivery_count = 3
+    delay_ms = 30000
     consumer = client.subscribe(
         topic=f"harvested{identifier}",
         subscription_name=f"transformer{identifier}",
@@ -333,6 +335,7 @@ if __name__ == "__main__":
         dead_letter_policy=ConsumerDeadLetterPolicy(
             max_redeliver_count=max_redelivery_count, dead_letter_topic=f"dead-letter{identifier}"
         ),
+        negative_ack_redelivery_delay_ms=delay_ms,
     )
 
     producer = client.create_producer(
