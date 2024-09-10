@@ -231,7 +231,7 @@ def process_pulsar_message(msg: Message, output_root: str):
                 logging.info(f"Links successfully rewritten for file {key}")
                 output_data["added_keys"].append(updated_key)
             except ClientError as e:
-                logging.exception(f"Temporary error processing added key {key}: {e}")
+                logging.error(f"Temporary error processing added key {key}: {e}")
                 raise  # Re-raise to trigger retry
             except Exception as e:
                 logging.exception(f"Permanent error processing added key {key}: {e}")
@@ -248,7 +248,7 @@ def process_pulsar_message(msg: Message, output_root: str):
                 logging.info(f"Links successfully rewritten for file {key}")
                 output_data["updated_keys"].append(updated_key)
             except ClientError as e:
-                logging.exception(f"Temporary error processing updated key {key}: {e}")
+                logging.error(f"Temporary error processing updated key {key}: {e}")
                 raise  # Re-raise to trigger retry
             except Exception as e:
                 logging.exception(f"Permanent error processing updated key {key}: {e}")
@@ -261,14 +261,14 @@ def process_pulsar_message(msg: Message, output_root: str):
                 delete_file_s3(bucket_name, updated_key)
                 output_data["deleted_keys"].append(updated_key)
             except ClientError as e:
-                logging.exception(f"Temporary error processing deleted key {key}: {e}")
+                logging.error(f"Temporary error processing deleted key {key}: {e}")
                 raise  # Re-raise to trigger retry
             except Exception as e:
                 logging.exception(f"Permanent error processing deleted key {key}: {e}")
 
         return output_data
     except ClientError as e:
-        logging.exception(f"Temporary error processing message: {e}")
+        logging.error(f"Temporary error processing message: {e}")
         raise  # Re-raise to trigger retry
     except Exception as e:
         logging.exception(f"Permanent error processing message: {e}")
@@ -295,12 +295,12 @@ def main():
             consumer.acknowledge(msg)
         except ClientError as e:
             # Temporary error, negative acknowledge to trigger retry
-            logging.exception(f"Temporary error occurred during transform: {e}")
+            logging.error(f"Temporary error occurred during transform: {e}")
             consumer.negative_acknowledge(msg)
         except Exception as e:
             # Permanent error, acknowledge to remove the message
             logging.exception(f"Permanent error occurred during transform: {e}")
-            consumer.negative_acknowledge(msg)
+            consumer.acknowledge(msg)
 
 
 def check_s3_access():
@@ -323,6 +323,8 @@ if __name__ == "__main__":
     else:
         identifier = ""
 
+    # check access to S3 bucket, if not present exit
+    check_s3_access()
     # Initiate Pulsar
     pulsar_url = os.environ.get("PULSAR_URL")
     client = Client(pulsar_url)
@@ -341,7 +343,4 @@ if __name__ == "__main__":
     producer = client.create_producer(
         topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
     )
-
-    # check access to S3 bucket, if not present exit
-    check_s3_access()
     main()
