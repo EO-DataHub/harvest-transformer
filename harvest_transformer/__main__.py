@@ -91,7 +91,7 @@ def get_file_s3(bucket: str, key: str) -> str:
         return file_obj["Body"].read().decode("utf-8")
     except ClientError as e:
         logging.error(f"File retrieval failed: {e}")
-        return None
+        raise
 
 
 def is_valid_url(url: str) -> bool:
@@ -204,75 +204,87 @@ def process_pulsar_message(msg: Message, output_root: str):
     Update files from given message where required,
     and send a Pulsar message with updated files
     """
-    try:
-        harvest_schema = generate_harvest_schema()
-        data_dict = get_message_data(msg, harvest_schema)
+    harvest_schema = generate_harvest_schema()
+    data_dict = get_message_data(msg, harvest_schema)
 
-        bucket_name = data_dict.get("bucket_name")
-        source = data_dict.get("source")
-        target = data_dict.get("target")
+    bucket_name = data_dict.get("bucket_name")
+    source = data_dict.get("source")
+    target = data_dict.get("target")
 
-        output_data = copy.deepcopy(data_dict)
-        output_data["added_keys"] = []
-        output_data["updated_keys"] = []
-        output_data["deleted_keys"] = []
+    output_data = copy.deepcopy(data_dict)
+    output_data["added_keys"] = []
+    output_data["updated_keys"] = []
+    output_data["deleted_keys"] = []
 
-        processors = [WorkflowProcessor(), LinkProcessor()]
+    processors = [WorkflowProcessor(), LinkProcessor()]
+    error_raised = False
 
-        for key in data_dict.get("added_keys"):
-            try:
-                updated_key = transform_key(key, source, target)
-                file_body = add_or_update_keys(
-                    key, source, target, output_root, bucket_name, processors
-                )
+    for key in data_dict.get("added_keys"):
+        try:
+            updated_key = transform_key(key, source, target)
+            file_body = add_or_update_keys(
+                key, source, target, output_root, bucket_name, processors
+            )
 
-                # Upload file to S3
-                upload_file_s3(file_body, bucket_name, updated_key)
-                logging.info(f"Links successfully rewritten for file {key}")
-                output_data["added_keys"].append(updated_key)
-            except ClientError as e:
-                logging.error(f"Temporary error processing added key {key}: {e}")
-                raise  # Re-raise to trigger retry
-            except Exception as e:
-                logging.exception(f"Permanent error processing added key {key}: {e}")
+            # Upload file to S3
+            upload_file_s3(file_body, bucket_name, updated_key)
+            logging.info(f"Links successfully rewritten for file {key}")
+            output_data["added_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing added key {key}: {e}")
+            error_raised = True
+        except Exception as e:
+            logging.exception(f"Permanent error processing added key {key}: {e}")
+            raise PermanentException(e) from e
 
-        for key in data_dict.get("updated_keys"):
-            try:
-                updated_key = transform_key(key, source, target)
-                file_body = add_or_update_keys(
-                    key, source, target, output_root, bucket_name, processors
-                )
+    for key in data_dict.get("updated_keys"):
+        try:
+            updated_key = transform_key(key, source, target)
+            file_body = add_or_update_keys(
+                key, source, target, output_root, bucket_name, processors
+            )
 
-                # Upload file to S3
-                upload_file_s3(file_body, bucket_name, updated_key)
-                logging.info(f"Links successfully rewritten for file {key}")
-                output_data["updated_keys"].append(updated_key)
-            except ClientError as e:
-                logging.error(f"Temporary error processing updated key {key}: {e}")
-                raise  # Re-raise to trigger retry
-            except Exception as e:
-                logging.exception(f"Permanent error processing updated key {key}: {e}")
+            # Upload file to S3
+            upload_file_s3(file_body, bucket_name, updated_key)
+            logging.info(f"Links successfully rewritten for file {key}")
+            output_data["updated_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing updated key {key}: {e}")
+            error_raised = True
+        except Exception as e:
+            logging.exception(f"Permanent error processing updated key {key}: {e}")
+            raise PermanentException(e) from e
 
-        for key in data_dict.get("deleted_keys"):
-            try:
-                # Generate transformed key
-                updated_key = transform_key(key, source, target)
-                # Remove file from S3
-                delete_file_s3(bucket_name, updated_key)
-                output_data["deleted_keys"].append(updated_key)
-            except ClientError as e:
-                logging.error(f"Temporary error processing deleted key {key}: {e}")
-                raise  # Re-raise to trigger retry
-            except Exception as e:
-                logging.exception(f"Permanent error processing deleted key {key}: {e}")
+    for key in data_dict.get("deleted_keys"):
+        try:
+            # Generate transformed key
+            updated_key = transform_key(key, source, target)
+            # Remove file from S3
+            delete_file_s3(bucket_name, updated_key)
+            output_data["deleted_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing deleted key {key}: {e}")
+            error_raised = True
+        except Exception as e:
+            logging.exception(f"Permanent error processing deleted key {key}: {e}")
+            raise PermanentException(e) from e
 
-        return output_data
-    except ClientError as e:
-        logging.error(f"Temporary error processing message: {e}")
-        raise  # Re-raise to trigger retry
-    except Exception as e:
-        logging.exception(f"Permanent error processing message: {e}")
-        raise
+    if error_raised:
+        raise TemporaryException("One or more temporary errors occurred during processing.")
+
+    return output_data
+
+
+class PermanentException(Exception):
+    """Message failed to be processed Acknowledge to remove from queue."""
+
+    pass
+
+
+class TemporaryException(Exception):
+    """Exception raised for temporary errors."""
+
+    pass
 
 
 def main():
@@ -293,11 +305,11 @@ def main():
 
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
-        except ClientError as e:
+        except TemporaryException as e:
             # Temporary error, negative acknowledge to trigger retry
             logging.error(f"Temporary error occurred during transform: {e}")
             consumer.negative_acknowledge(msg)
-        except Exception as e:
+        except PermanentException as e:
             # Permanent error, acknowledge to remove the message
             logging.exception(f"Permanent error occurred during transform: {e}")
             consumer.acknowledge(msg)
@@ -310,7 +322,7 @@ def check_s3_access():
         logging.info("S3 access successful.")
     except ClientError as e:
         logging.exception(f"S3 access failed: {e}")
-        exit(1)
+        raise
 
 
 if __name__ == "__main__":
