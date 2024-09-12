@@ -215,9 +215,11 @@ def process_pulsar_message(msg: Message, output_root: str):
     output_data["added_keys"] = []
     output_data["updated_keys"] = []
     output_data["deleted_keys"] = []
+    output_data["failed_files"] = []
 
     processors = [WorkflowProcessor(), LinkProcessor()]
-    error_raised = False
+
+    temporary_error_occurred = False
 
     for key in data_dict.get("added_keys"):
         try:
@@ -232,10 +234,11 @@ def process_pulsar_message(msg: Message, output_root: str):
             output_data["added_keys"].append(updated_key)
         except ClientError as e:
             logging.error(f"Temporary error processing added key {key}: {e}")
-            error_raised = True
+            output_data["failed_files"].append({"key": key, "error": str(e)})
+            temporary_error_occurred = True
         except Exception as e:
             logging.exception(f"Permanent error processing added key {key}: {e}")
-            raise PermanentException(e) from e
+            output_data["failed_files"].append({"key": key, "error": str(e)})
 
     for key in data_dict.get("updated_keys"):
         try:
@@ -250,10 +253,11 @@ def process_pulsar_message(msg: Message, output_root: str):
             output_data["updated_keys"].append(updated_key)
         except ClientError as e:
             logging.error(f"Temporary error processing updated key {key}: {e}")
-            error_raised = True
+            output_data["failed_files"].append({"key": key, "error": str(e)})
+            temporary_error_occurred = True
         except Exception as e:
             logging.exception(f"Permanent error processing updated key {key}: {e}")
-            raise PermanentException(e) from e
+            output_data["failed_files"].append({"key": key, "error": str(e)})
 
     for key in data_dict.get("deleted_keys"):
         try:
@@ -264,15 +268,19 @@ def process_pulsar_message(msg: Message, output_root: str):
             output_data["deleted_keys"].append(updated_key)
         except ClientError as e:
             logging.error(f"Temporary error processing deleted key {key}: {e}")
-            error_raised = True
+            output_data["failed_files"].append({"key": key, "error": str(e)})
+            temporary_error_occurred = True
         except Exception as e:
             logging.exception(f"Permanent error processing deleted key {key}: {e}")
-            raise PermanentException(e) from e
+            output_data["failed_files"].append({"key": key, "error": str(e)})
 
-    if error_raised:
-        raise TemporaryException("One or more temporary errors occurred during processing.")
+    # Print the list of failed files and their errors if any
+    if output_data["failed_files"]:
+        logging.error("Failed files and their errors:")
+        for failed_file in output_data["failed_files"]:
+            logging.error(f"File: {failed_file['key']}, Error: {failed_file['error']}")
 
-    return output_data
+    return output_data, temporary_error_occurred
 
 
 class PermanentException(Exception):
@@ -292,27 +300,34 @@ def main():
     Poll for new Pulsar messages and trigger transform process
     """
     while True:
+        output_data = None  # Initialize output_data to None
+        temporary_error_occurred = False  # Initialize temporary_error_occurred to False
         try:
             msg = consumer.receive()
-
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
             output_data = process_pulsar_message(msg, args.output_root)
-
-            # Send message to Pulsar
-            producer.send((json.dumps(output_data)).encode("utf-8"))
-            logging.info(f"Sent transformed message {output_data}")
-
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
         except TemporaryException as e:
-            # Temporary error, negative acknowledge to trigger retry
+            # Temporary error, increment retry counter
             logging.error(f"Temporary error occurred during transform: {e}")
             consumer.negative_acknowledge(msg)
         except PermanentException as e:
             # Permanent error, acknowledge to remove the message
             logging.exception(f"Permanent error occurred during transform: {e}")
             consumer.acknowledge(msg)
+        except Exception as e:
+            # Catch any other exceptions and log them
+            logging.exception(f"Unexpected error occurred: {e}")
+            consumer.acknowledge(msg)
+        finally:
+            if output_data is not None:
+                # Send message to Pulsar
+                producer.send((json.dumps(output_data)).encode("utf-8"))
+                logging.info(f"Sent transformed message {output_data}")
+            if temporary_error_occurred:
+                raise TemporaryException("Temporary error occurred during processing.")
 
 
 def check_s3_access():
