@@ -306,7 +306,7 @@ def main():
             msg = consumer.receive()
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
-            output_data = process_pulsar_message(msg, args.output_root)
+            output_data, temporary_error_occurred = process_pulsar_message(msg, args.output_root)
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
         except TemporaryException as e:
@@ -327,7 +327,8 @@ def main():
                 producer.send((json.dumps(output_data)).encode("utf-8"))
                 logging.info(f"Sent transformed message {output_data}")
             if temporary_error_occurred:
-                raise TemporaryException("Temporary error occurred during processing.")
+                consumer.negative_acknowledge(msg)
+                logging.error("Sent as negative acknowledgement due to temporary error.")
 
 
 def check_s3_access():

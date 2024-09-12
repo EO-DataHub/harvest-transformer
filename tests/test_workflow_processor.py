@@ -223,5 +223,20 @@ def test_workflows_and_links_with_only_cwl_input_valid():
     with open(stac_expected_location, "r") as file:
         expected_json = json.load(file)
 
+    # Print differences for debugging
+    if output_json != expected_json:
+        print("Differences found:")
+        for key in output_json:
+            if key in expected_json:
+                if output_json[key] != expected_json[key]:
+                    print(f"Key: {key}")
+                    print(f"Actual: {output_json[key]}")
+                    print(f"Expected: {expected_json[key]}")
+            else:
+                print(f"Key {key} not found in expected JSON")
+        for key in expected_json:
+            if key not in output_json:
+                print(f"Key {key} not found in actual JSON")
+
     # Check generated STAC is correct
     assert output_json == expected_json
