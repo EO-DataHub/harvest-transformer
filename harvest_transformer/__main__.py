@@ -299,6 +299,8 @@ def main():
     """
     Poll for new Pulsar messages and trigger transform process
     """
+    message_sent = False
+    retryCount = 0
     while True:
         output_data = None  # Initialize output_data to None
         temporary_error_occurred = False  # Initialize temporary_error_occurred to False
@@ -307,6 +309,9 @@ def main():
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
             output_data, temporary_error_occurred = process_pulsar_message(msg, args.output_root)
+            logging.info(
+                f"Getting this ready to send while current message sent status is {message_sent}"
+            )
         except TemporaryException as e:
             # Temporary error, increment retry counter
             logging.error(f"Temporary error occurred during transform: {e}")
@@ -318,16 +323,28 @@ def main():
             # Catch any other exceptions and log them
             logging.exception(f"Unexpected error occurred: {e}")
         finally:
-            if output_data is not None:
+            if output_data is not None and not message_sent:
                 # Send message to Pulsar
                 producer.send((json.dumps(output_data)).encode("utf-8"))
                 logging.info(f"Sent transformed message {output_data}")
+                message_sent = True
             if temporary_error_occurred:
+                retryCount += 1
                 consumer.negative_acknowledge(msg)
-                logging.error("Sent as negative acknowledgement due to temporary error.")
+                logging.error(
+                    f"Sent as negative acknowledgement due to temporary error. "
+                    f"while retry count is {retryCount - 1}"
+                )
+                if retryCount == 4:
+                    logging.error(
+                        "Retrying limit reached. Exiting... and resetting the message status to False"
+                    )
+                    message_sent = False
             else:
                 # Acknowledge successful processing of the message
                 consumer.acknowledge(msg)
+                message_sent = False
+                logging.info(f"Finishing... and resetting the message status to {message_sent}")
 
 
 def check_s3_access():
