@@ -307,20 +307,16 @@ def main():
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
             output_data, temporary_error_occurred = process_pulsar_message(msg, args.output_root)
-            # Acknowledge successful processing of the message
-            consumer.acknowledge(msg)
         except TemporaryException as e:
             # Temporary error, increment retry counter
             logging.error(f"Temporary error occurred during transform: {e}")
-            consumer.negative_acknowledge(msg)
+            temporary_error_occurred = True
         except PermanentException as e:
             # Permanent error, acknowledge to remove the message
             logging.exception(f"Permanent error occurred during transform: {e}")
-            consumer.acknowledge(msg)
         except Exception as e:
             # Catch any other exceptions and log them
             logging.exception(f"Unexpected error occurred: {e}")
-            consumer.acknowledge(msg)
         finally:
             if output_data is not None:
                 # Send message to Pulsar
@@ -329,6 +325,9 @@ def main():
             if temporary_error_occurred:
                 consumer.negative_acknowledge(msg)
                 logging.error("Sent as negative acknowledgement due to temporary error.")
+            else:
+                # Acknowledge successful processing of the message
+                consumer.acknowledge(msg)
 
 
 def check_s3_access():
