@@ -256,11 +256,11 @@ def main():
         try:
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
-            output_data = process_pulsar_message(msg, args.output_root)
-
-            # Send message to Pulsar
-            producer.send((json.dumps(output_data)).encode("utf-8"))
-            logging.info(f"Sent transformed message {output_data}")
+            # output_data = process_pulsar_message(msg, args.output_root)
+            #
+            # # Send message to Pulsar
+            # producer.send((json.dumps(output_data)).encode("utf-8"))
+            # logging.info(f"Sent transformed message {output_data}")
 
             # Acknowledge successful processing of the message
             consumer.acknowledge(msg)
