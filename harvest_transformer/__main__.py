@@ -340,6 +340,7 @@ def main():
                         "Retrying limit reached. Exiting... and resetting the message status to False"
                     )
                     message_sent = False
+                    retryCount = 0
             else:
                 # Acknowledge successful processing of the message
                 consumer.acknowledge(msg)
