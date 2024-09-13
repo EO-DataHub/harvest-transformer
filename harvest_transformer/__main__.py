@@ -253,6 +253,8 @@ def main():
     """
     while True:
         msg = consumer.receive()
+        print("test")
+
         try:
             # Parse harvested message
             logging.info(f"Parsing harvested message {msg.data()}")
