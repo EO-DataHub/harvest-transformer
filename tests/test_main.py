@@ -236,7 +236,7 @@ def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3,
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -269,7 +269,12 @@ def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3,
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert no failed files
-    assert output_data["failed_files"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -306,7 +311,7 @@ def test_process_pulsar_message_update(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -339,7 +344,12 @@ def test_process_pulsar_message_update(
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert no failed files
-    assert output_data["failed_files"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -376,7 +386,7 @@ def test_process_pulsar_message_delete(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was not called
     assert mock_update_file.call_count == 0
@@ -409,7 +419,12 @@ def test_process_pulsar_message_delete(
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert no failed files
-    assert output_data["failed_files"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -452,7 +467,7 @@ def test_process_pulsar_message_failure(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -483,17 +498,16 @@ def test_process_pulsar_message_failure(
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert failed files
-    assert len(output_data["failed_files"]) == 2
+    assert len(output_data["failed_files"]["temp_failed_keys"]["added_keys"]) == 1
     assert (
-        output_data["failed_files"][0]["key"]
+        output_data["failed_files"]["temp_failed_keys"]["added_keys"][0]
         == "https://test-catalog.temp.data.com/collections/test-collection"
     )
-    assert "An error occurred (500)" in output_data["failed_files"][0]["error"]
+    assert len(output_data["failed_files"]["perm_failed_keys"]["added_keys"]) == 1
     assert (
-        output_data["failed_files"][1]["key"]
+        output_data["failed_files"]["perm_failed_keys"]["added_keys"][0]
         == "https://test-catalog.temp.data.com/collections/test-collection/items/test-item"
     )
-    assert "Permanent error" in output_data["failed_files"][1]["error"]
 
 
 @patch("harvest_transformer.__main__.delete_file_s3")
@@ -527,7 +541,7 @@ def test_process_pulsar_message_deleted_keys(mock_get_file_from_url, mock_delete
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that delete_file_s3 was called once for each file
     assert mock_delete_file_s3.call_count == 3
@@ -557,7 +571,12 @@ def test_process_pulsar_message_deleted_keys(mock_get_file_from_url, mock_delete
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert no failed files
-    assert output_data["failed_files"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -594,7 +613,7 @@ def test_process_pulsar_message_updated_keys(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data, _ = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -627,4 +646,9 @@ def test_process_pulsar_message_updated_keys(
     assert list(output_data.keys()) == expected_dict_keys
 
     # Assert no failed files
-    assert output_data["failed_files"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
