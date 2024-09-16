@@ -295,22 +295,29 @@ def main():
     Poll for new Pulsar messages and trigger transform process
     """
     while True:
+        msg = consumer.receive()
+        # Send message to Pulsar
+
+        output_data = process_pulsar_message(msg, args.output_root)
+
         try:
-            msg = consumer.receive()
-            output_data = process_pulsar_message(msg, args.output_root)
-            # Send message to Pulsar
-            producer.send((json.dumps(output_data)).encode("utf-8"))
-            logging.info(f"Sent transformed message {output_data}")
-            if (
-                output_data["failed_files"]["temp_failed_keys"]["updated_keys"]
-                or output_data["failed_files"]["temp_failed_keys"]["added_keys"]
-                or output_data["failed_files"]["temp_failed_keys"]["deleted_keys"]
-            ):
-                consumer.negative_acknowledge(msg)
-            else:
-                consumer.acknowledge(msg)
-        except Exception as e:
-            logging.exception(f"Message faied to receive: {e}")
+            data = json.dumps(output_data).encode("utf-8")
+        except (json.JSONEncoder, UnicodeEncodeError) as e:
+            logging.error("Failed to encode message output %e", e)
+            consumer.negative_acknowledge(msg)
+            continue
+        else:
+            producer.send(data)
+
+        logging.info(f"Sent transformed message {output_data}")
+        if (
+            output_data["failed_files"]["temp_failed_keys"]["updated_keys"]
+            or output_data["failed_files"]["temp_failed_keys"]["added_keys"]
+            or output_data["failed_files"]["temp_failed_keys"]["deleted_keys"]
+        ):
+            consumer.negative_acknowledge(msg)
+        else:
+            consumer.acknowledge(msg)
 
 
 def check_s3_access():
