@@ -302,8 +302,8 @@ def main():
 
         try:
             data = json.dumps(output_data).encode("utf-8")
-        except (json.JSONEncoder, UnicodeEncodeError) as e:
-            logging.error("Failed to encode message output %e", e)
+        except (ValueError, UnicodeEncodeError) as e:
+            logging.error("Failed to encode message output: %e", e)
             consumer.negative_acknowledge(msg)
             continue
         else:
