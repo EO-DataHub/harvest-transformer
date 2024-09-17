@@ -2,6 +2,8 @@ import json
 import unittest.mock
 from unittest.mock import patch
 
+from botocore.exceptions import ClientError
+
 from harvest_transformer.__main__ import (
     delete_file_s3,
     get_file_contents_as_json,
@@ -234,7 +236,7 @@ def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3,
 
     test_message = Message(msg)
     output_root = "/"
-    output_data = process_pulsar_message(test_message, output_root)
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -259,11 +261,20 @@ def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3,
         "deleted_keys",
         "source",
         "target",
+        "failed_files",
     ]
 
     # Assert output keys are correctly reformated
     assert output_data["added_keys"] == expected_output_keys
     assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert no failed files
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -300,7 +311,7 @@ def test_process_pulsar_message_update(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data = process_pulsar_message(test_message, output_root)
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was called once for each file
     assert mock_update_file.call_count == 3
@@ -325,11 +336,20 @@ def test_process_pulsar_message_update(
         "deleted_keys",
         "source",
         "target",
+        "failed_files",
     ]
 
     # Assert output keys are correctly reformated
     assert output_data["updated_keys"] == expected_output_keys
     assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert no failed files
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
 @patch("harvest_transformer.__main__.update_file")
@@ -366,7 +386,7 @@ def test_process_pulsar_message_delete(
 
     test_message = Message(msg)
     output_root = "/"
-    output_data = process_pulsar_message(test_message, output_root)
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
 
     # Assert that update_file was not called
     assert mock_update_file.call_count == 0
@@ -391,8 +411,244 @@ def test_process_pulsar_message_delete(
         "deleted_keys",
         "source",
         "target",
+        "failed_files",
     ]
 
     # Assert output keys are correctly reformated
     assert output_data["deleted_keys"] == expected_output_keys
     assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert no failed files
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
+
+
+@patch("harvest_transformer.__main__.update_file")
+@patch("harvest_transformer.__main__.upload_file_s3")
+@patch("harvest_transformer.__main__.get_file_from_url")
+def test_process_pulsar_message_failure(
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file
+):
+    # Mock return value for get_file_from_url
+    stac_location = "test_data/test_links_replacement_only.json"
+    with open(stac_location, "r") as file:
+        mock_get_file_from_url.return_value = file.read()
+
+    # Mock this to prevent any actual S3 integration
+    mock_upload_file_s3.side_effect = [
+        None,  # First call succeeds
+        ClientError(
+            {"Error": {"Code": "500"}}, "upload_file_s3"
+        ),  # Second call fails with temporary error
+        Exception("Permanent error"),  # Third call fails with permanent error
+    ]
+
+    # Input Pulsar message
+    msg = {
+        "id": "pulsar-test-id/testing",
+        "workspace": "",
+        "repository": "",
+        "branch": "main",
+        "bucket_name": "test-bucket",
+        "updated_keys": [],
+        "added_keys": [
+            "https://test-catalog.temp.data.com",
+            "https://test-catalog.temp.data.com/collections/test-collection",
+            "https://test-catalog.temp.data.com/collections/test-collection/items/test-item",
+        ],
+        "deleted_keys": [],
+        "source": "https://test-catalog.temp.data.com",
+        "target": "test-datasets/test-catalog",
+    }
+
+    test_message = Message(msg)
+    output_root = "/"
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+
+    # Assert that update_file was called once for each file
+    assert mock_update_file.call_count == 3
+
+    # Assert that the upload to S3 function was called once per file
+    assert mock_upload_file_s3.call_count == 3
+
+    expected_output_keys = [
+        "transformed/test-datasets/test-catalog.json",
+    ]
+
+    expected_dict_keys = [
+        "id",
+        "workspace",
+        "repository",
+        "branch",
+        "bucket_name",
+        "updated_keys",
+        "added_keys",
+        "deleted_keys",
+        "source",
+        "target",
+        "failed_files",
+    ]
+
+    # Assert output keys are correctly reformatted
+    assert output_data["added_keys"] == expected_output_keys
+    assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert failed files
+    assert len(output_data["failed_files"]["temp_failed_keys"]["added_keys"]) == 1
+    assert (
+        output_data["failed_files"]["temp_failed_keys"]["added_keys"][0]
+        == "https://test-catalog.temp.data.com/collections/test-collection"
+    )
+    assert len(output_data["failed_files"]["perm_failed_keys"]["added_keys"]) == 1
+    assert (
+        output_data["failed_files"]["perm_failed_keys"]["added_keys"][0]
+        == "https://test-catalog.temp.data.com/collections/test-collection/items/test-item"
+    )
+
+
+@patch("harvest_transformer.__main__.delete_file_s3")
+@patch("harvest_transformer.__main__.get_file_from_url")
+def test_process_pulsar_message_deleted_keys(mock_get_file_from_url, mock_delete_file_s3):
+    # Mock return value for get_file_from_url
+    stac_location = "test_data/test_links_replacement_only.json"
+    with open(stac_location, "r") as file:
+        mock_get_file_from_url.return_value = file.read()
+
+    # Mock this to prevent any actual S3 integration
+    mock_delete_file_s3.return_value = True
+
+    # Input Pulsar message
+    msg = {
+        "id": "pulsar-test-id/testing",
+        "workspace": "",
+        "repository": "",
+        "branch": "main",
+        "bucket_name": "test-bucket",
+        "updated_keys": [],
+        "added_keys": [],
+        "deleted_keys": [
+            "https://test-catalog.temp.data.com",
+            "https://test-catalog.temp.data.com/collections/test-collection",
+            "https://test-catalog.temp.data.com/collections/test-collection/items/test-item",
+        ],
+        "source": "https://test-catalog.temp.data.com",
+        "target": "test-datasets/test-catalog",
+    }
+
+    test_message = Message(msg)
+    output_root = "/"
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+
+    # Assert that delete_file_s3 was called once for each file
+    assert mock_delete_file_s3.call_count == 3
+
+    expected_output_keys = [
+        "transformed/test-datasets/test-catalog.json",
+        "transformed/test-datasets/test-catalog/test-collection.json",
+        "transformed/test-datasets/test-catalog/test-collection/test-item.json",
+    ]
+
+    expected_dict_keys = [
+        "id",
+        "workspace",
+        "repository",
+        "branch",
+        "bucket_name",
+        "updated_keys",
+        "added_keys",
+        "deleted_keys",
+        "source",
+        "target",
+        "failed_files",
+    ]
+
+    # Assert output keys are correctly reformatted
+    assert output_data["deleted_keys"] == expected_output_keys
+    assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert no failed files
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
+
+
+@patch("harvest_transformer.__main__.update_file")
+@patch("harvest_transformer.__main__.upload_file_s3")
+@patch("harvest_transformer.__main__.get_file_from_url")
+def test_process_pulsar_message_updated_keys(
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file
+):
+    # Mock return value for get_file_from_url
+    stac_location = "test_data/test_links_replacement_only.json"
+    with open(stac_location, "r") as file:
+        mock_get_file_from_url.return_value = file.read()
+
+    # Mock this to prevent any actual S3 integration
+    mock_upload_file_s3.return_value = True
+
+    # Input Pulsar message
+    msg = {
+        "id": "pulsar-test-id/testing",
+        "workspace": "",
+        "repository": "",
+        "branch": "main",
+        "bucket_name": "test-bucket",
+        "updated_keys": [
+            "https://test-catalog.temp.data.com",
+            "https://test-catalog.temp.data.com/collections/test-collection",
+            "https://test-catalog.temp.data.com/collections/test-collection/items/test-item",
+        ],
+        "added_keys": [],
+        "deleted_keys": [],
+        "source": "https://test-catalog.temp.data.com",
+        "target": "test-datasets/test-catalog",
+    }
+
+    test_message = Message(msg)
+    output_root = "/"
+    output_data = process_pulsar_message(test_message, output_root)  # Unpack the tuple
+
+    # Assert that update_file was called once for each file
+    assert mock_update_file.call_count == 3
+
+    # Assert that the upload to S3 function was called once per file
+    assert mock_upload_file_s3.call_count == 3
+
+    expected_output_keys = [
+        "transformed/test-datasets/test-catalog.json",
+        "transformed/test-datasets/test-catalog/test-collection.json",
+        "transformed/test-datasets/test-catalog/test-collection/test-item.json",
+    ]
+
+    expected_dict_keys = [
+        "id",
+        "workspace",
+        "repository",
+        "branch",
+        "bucket_name",
+        "updated_keys",
+        "added_keys",
+        "deleted_keys",
+        "source",
+        "target",
+        "failed_files",
+    ]
+
+    # Assert output keys are correctly reformatted
+    assert output_data["updated_keys"] == expected_output_keys
+    assert list(output_data.keys()) == expected_dict_keys
+
+    # Assert no failed files
+    assert output_data["failed_files"]["temp_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["updated_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["added_keys"] == []
+    assert output_data["failed_files"]["temp_failed_keys"]["deleted_keys"] == []
+    assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []

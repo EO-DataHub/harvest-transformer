@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import ClientError
 from eodhp_utils.pulsar.messages import generate_harvest_schema, get_message_data
-from pulsar import Client, Message
+from pulsar import Client, ConsumerDeadLetterPolicy, ConsumerType, Message
 
 from .link_processor import LinkProcessor
 from .utils import get_file_from_url
@@ -28,7 +28,6 @@ if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
     )
     s3_client = session.client("s3")
-
 else:
     s3_client = boto3.client("s3")
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -40,6 +39,7 @@ def upload_file_s3(body: str, bucket: str, key: str):
         s3_client.put_object(Body=body, Bucket=bucket, Key=key)
     except ClientError as e:
         logging.error(f"File upload failed: {e}")
+        raise
 
 
 def delete_file_s3(bucket: str, key: str):
@@ -49,6 +49,7 @@ def delete_file_s3(bucket: str, key: str):
         logging.info(f"Deleted file {key} from bucket {bucket}.")
     except ClientError as e:
         logging.error(f"File deletion failed: {e}")
+        raise
 
 
 def reformat_key(key: str) -> str:
@@ -92,7 +93,7 @@ def get_file_s3(bucket: str, key: str) -> str:
         return file_obj["Body"].read().decode("utf-8")
     except ClientError as e:
         logging.error(f"File retrieval failed: {e}")
-        return None
+        raise
 
 
 def is_valid_url(url: str) -> bool:
@@ -216,33 +217,75 @@ def process_pulsar_message(msg: Message, output_root: str):
     output_data["added_keys"] = []
     output_data["updated_keys"] = []
     output_data["deleted_keys"] = []
-
+    output_data["failed_files"] = {
+        "temp_failed_keys": {
+            "updated_keys": [],
+            "added_keys": [],
+            "deleted_keys": [],
+        },
+        "perm_failed_keys": {
+            "updated_keys": [],
+            "added_keys": [],
+            "deleted_keys": [],
+        },
+    }
     processors = [WorkflowProcessor(), LinkProcessor()]
 
     for key in data_dict.get("added_keys"):
-        updated_key = transform_key(key, source, target)
-        file_body = add_or_update_keys(key, source, target, output_root, bucket_name, processors)
+        try:
+            updated_key = transform_key(key, source, target)
+            file_body = add_or_update_keys(
+                key, source, target, output_root, bucket_name, processors
+            )
 
-        # Upload file to S3
-        upload_file_s3(file_body, bucket_name, updated_key)
-        logging.info(f"Links successfully rewritten for file {key}")
-        output_data["added_keys"].append(updated_key)
+            # Upload file to S3
+            upload_file_s3(file_body, bucket_name, updated_key)
+            logging.info(f"Links successfully rewritten for file {key}")
+            output_data["added_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing added key {key}: {e}")
+            output_data["failed_files"]["temp_failed_keys"]["added_keys"].append(key)
+            continue
+        except Exception as e:
+            logging.exception(f"Permanent error processing added key {key}: {e}")
+            output_data["failed_files"]["perm_failed_keys"]["added_keys"].append(key)
+            continue
 
     for key in data_dict.get("updated_keys"):
-        updated_key = transform_key(key, source, target)
-        file_body = add_or_update_keys(key, source, target, output_root, bucket_name, processors)
+        try:
+            updated_key = transform_key(key, source, target)
+            file_body = add_or_update_keys(
+                key, source, target, output_root, bucket_name, processors
+            )
 
-        # Upload file to S3
-        upload_file_s3(file_body, bucket_name, updated_key)
-        logging.info(f"Links successfully rewritten for file {key}")
-        output_data["updated_keys"].append(updated_key)
+            # Upload file to S3
+            upload_file_s3(file_body, bucket_name, updated_key)
+            logging.info(f"Links successfully rewritten for file {key}")
+            output_data["updated_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing updated key {key}: {e}")
+            output_data["failed_files"]["temp_failed_keys"]["updated_keys"].append(key)
+            continue
+        except Exception as e:
+            logging.exception(f"Permanent error processing updated key {key}: {e}")
+            output_data["failed_files"]["perm_failed_keys"]["updated_keys"].append(key)
+            continue
 
     for key in data_dict.get("deleted_keys"):
-        # Generate transformed key
-        updated_key = transform_key(key, source, target)
-        # Remove file from S3
-        delete_file_s3(bucket_name, updated_key)
-        output_data["deleted_keys"].append(updated_key)
+        try:
+            # Generate transformed key
+            updated_key = transform_key(key, source, target)
+            # Remove file from S3
+            delete_file_s3(bucket_name, updated_key)
+            output_data["deleted_keys"].append(updated_key)
+        except ClientError as e:
+            logging.error(f"Temporary error processing deleted key {key}: {e}")
+            output_data["failed_files"]["temp_failed_keys"]["deleted_keys"].append(key)
+            continue
+        except Exception as e:
+            logging.exception(f"Permanent error processing deleted key {key}: {e}")
+            output_data["failed_files"]["perm_failed_keys"]["deleted_keys"].append(key)
+            continue
 
     return output_data
 
@@ -253,21 +296,38 @@ def main():
     """
     while True:
         msg = consumer.receive()
+        # Send message to Pulsar
+
+        output_data = process_pulsar_message(msg, args.output_root)
+
         try:
-            # Parse harvested message
-            logging.info(f"Parsing harvested message {msg.data()}")
-            output_data = process_pulsar_message(msg, args.output_root)
+            data = json.dumps(output_data).encode("utf-8")
+        except (ValueError, UnicodeEncodeError) as e:
+            logging.error("Failed to encode message output: %e", e)
+            consumer.negative_acknowledge(msg)
+            continue
+        else:
+            producer.send(data)
 
-            # Send message to Pulsar
-            producer.send((json.dumps(output_data)).encode("utf-8"))
-            logging.info(f"Sent transformed message {output_data}")
+        logging.info(f"Sent transformed message {output_data}")
+        if (
+            output_data["failed_files"]["temp_failed_keys"]["updated_keys"]
+            or output_data["failed_files"]["temp_failed_keys"]["added_keys"]
+            or output_data["failed_files"]["temp_failed_keys"]["deleted_keys"]
+        ):
+            consumer.negative_acknowledge(msg)
+        else:
+            consumer.acknowledge(msg)
 
-            # Acknowledge successful processing of the message
-            consumer.acknowledge(msg)
-        except Exception as e:
-            # Message failed to be processed. Acknowledge to remove it.
-            logging.error(f"Error occurred during transform: {e}")
-            consumer.acknowledge(msg)
+
+def check_s3_access():
+    """Test S3 access"""
+    try:
+        s3_client.list_buckets()
+        logging.info("S3 access successful.")
+    except ClientError as e:
+        logging.exception(f"S3 access failed: {e}")
+        raise
 
 
 if __name__ == "__main__":
@@ -280,12 +340,23 @@ if __name__ == "__main__":
     else:
         identifier = ""
 
+    # check access to S3 bucket, if not present exit
+    check_s3_access()
     # Initiate Pulsar
     pulsar_url = os.environ.get("PULSAR_URL")
     client = Client(pulsar_url)
+    max_redelivery_count = 3
+    delay_ms = 30000
     consumer = client.subscribe(
-        topic=f"harvested{identifier}", subscription_name=f"transformer-subscription{identifier}"
+        topic=f"harvested{identifier}",
+        subscription_name=f"transformer{identifier}",
+        consumer_type=ConsumerType.Shared,
+        dead_letter_policy=ConsumerDeadLetterPolicy(
+            max_redeliver_count=max_redelivery_count, dead_letter_topic=f"dead-letter{identifier}"
+        ),
+        negative_ack_redelivery_delay_ms=delay_ms,
     )
+
     producer = client.create_producer(
         topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
     )
