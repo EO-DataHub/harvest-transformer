@@ -8,7 +8,7 @@ workflow_stac_processor = WorkflowProcessor()
 
 class Sentinel2ArdProcessor:
     def is_sentinel2_ard_collection(self, file_body):
-        return file_body["type"] == "Collection" and file_body["id"] == "sentinel2_ard"
+        return file_body.get("type") == "Collection" and file_body.get("id") == "sentinel2_ard"
 
     def add_missing_fields(self, file_body):
         if not file_body.get("stac_extensions"):
