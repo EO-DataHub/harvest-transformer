@@ -71,6 +71,20 @@ def test_is_sentinel2_ard_collection__failure(key, value, mock_sentinel_collecti
 
 
 @pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param("type", id="collection"),
+        pytest.param("id", id="id"),
+    ],
+)
+def test_is_sentinel2_ard_collection__failure_missing(key, mock_sentinel_collection):
+    del mock_sentinel_collection[key]
+    processor = Sentinel2ArdProcessor()
+
+    assert processor.is_sentinel2_ard_collection(mock_sentinel_collection) is False
+
+
+@pytest.mark.parametrize(
     "stac_extension",
     [
         pytest.param(None, id="none"),

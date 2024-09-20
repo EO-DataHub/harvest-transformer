@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 
 from .workflow_processor import WorkflowProcessor
@@ -35,6 +36,7 @@ class Sentinel2ArdProcessor:
             return file_body
 
         if self.is_sentinel2_ard_collection(file_body):
+            logging.info(f"{file_name} is a Sentinel2 ARD Collection file")
             file_body = self.add_missing_fields(file_body)
             self.add_missing_fields(file_body)
             render_extension_url = "https://stac-extensions.github.io/render/v1.0.0/schema.json"
