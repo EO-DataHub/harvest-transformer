@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Union
 
 from .workflow_processor import WorkflowProcessor
@@ -7,9 +8,11 @@ from .workflow_processor import WorkflowProcessor
 workflow_stac_processor = WorkflowProcessor()
 
 
-class Sentinel2ArdProcessor:
-    def is_sentinel2_ard_collection(self, file_body):
-        return file_body.get("type") == "Collection" and file_body.get("id") == "sentinel2_ard"
+class RenderProcessor:
+    def is_renderable(self, file_body):
+        return file_body.get("type") == "Collection" and file_body.get("id") in os.environ.get(
+            "RENDERABLE_COLLECTIONS"
+        ).split(",")
 
     def add_missing_fields(self, file_body):
         if not file_body.get("stac_extensions"):
@@ -35,8 +38,8 @@ class Sentinel2ArdProcessor:
         if not isinstance(file_body, dict):
             return file_body
 
-        if self.is_sentinel2_ard_collection(file_body):
-            logging.info(f"{file_name} is a Sentinel2 ARD Collection file")
+        if self.is_renderable(file_body):
+            logging.info(f"{file_name} is a Renderable Collection file")
             file_body = self.add_missing_fields(file_body)
             self.add_missing_fields(file_body)
             render_extension_url = "https://stac-extensions.github.io/render/v1.0.0/schema.json"
@@ -48,8 +51,9 @@ class Sentinel2ArdProcessor:
                 "rgb": {
                     "title": "RGB",
                     "assets": ["cog"],
-                    "asset_bidx": "cog|1,2,3",
-                    "minmax_zoom": [8, 22],
+                    "bidx": [1, 2, 3],
+                    "rescale": [[0, 100], [0, 100], [0, 100]],
+                    "resampling": "nearest",
                 }
             }
 

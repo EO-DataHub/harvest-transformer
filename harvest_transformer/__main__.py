@@ -12,7 +12,7 @@ from eodhp_utils.pulsar.messages import generate_harvest_schema, get_message_dat
 from pulsar import Client, ConsumerDeadLetterPolicy, ConsumerType, Message
 
 from .link_processor import LinkProcessor
-from .sentinel2_ard_processor import Sentinel2ArdProcessor
+from .sentinel2_ard_processor import RenderProcessor
 from .utils import get_file_from_url
 from .workflow_processor import WorkflowProcessor
 
@@ -231,7 +231,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             "deleted_keys": [],
         },
     }
-    processors = [WorkflowProcessor(), LinkProcessor(), Sentinel2ArdProcessor()]
+    processors = [WorkflowProcessor(), LinkProcessor(), RenderProcessor()]
 
     for key in data_dict.get("added_keys"):
         try:

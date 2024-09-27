@@ -1,10 +1,12 @@
 import copy
 import json
+import os
+from unittest import mock
 
 import pytest
 
 from harvest_transformer.__main__ import update_file
-from harvest_transformer.sentinel2_ard_processor import Sentinel2ArdProcessor
+from harvest_transformer.sentinel2_ard_processor import RenderProcessor
 
 SOURCE_PATH = "https://example.link.for.test/"
 TARGET = "/target_directory/"
@@ -50,10 +52,18 @@ def mock_file_name():
     return "mytestfile.json"
 
 
-def test_is_sentinel2_ard_collection__success(mock_sentinel_collection):
-    processor = Sentinel2ArdProcessor()
+@pytest.fixture(autouse=True)
+def mock_environment_variables():
+    with mock.patch.dict(
+        os.environ, {"RENDERABLE_COLLECTIONS": "sentinel2_ard,aDifferentCollection"}
+    ):
+        yield
 
-    assert processor.is_sentinel2_ard_collection(mock_sentinel_collection)
+
+def test_is_renderable_collection__success(mock_sentinel_collection):
+    processor = RenderProcessor()
+
+    assert processor.is_renderable(mock_sentinel_collection)
 
 
 @pytest.mark.parametrize(
@@ -63,11 +73,11 @@ def test_is_sentinel2_ard_collection__success(mock_sentinel_collection):
         pytest.param("id", "not_sentinel2_ard", id="id"),
     ],
 )
-def test_is_sentinel2_ard_collection__failure(key, value, mock_sentinel_collection):
+def test_is_renderable_collection__failure(key, value, mock_sentinel_collection):
     mock_sentinel_collection[key] = value
-    processor = Sentinel2ArdProcessor()
+    processor = RenderProcessor()
 
-    assert processor.is_sentinel2_ard_collection(mock_sentinel_collection) is False
+    assert processor.is_renderable(mock_sentinel_collection) is False
 
 
 @pytest.mark.parametrize(
@@ -79,9 +89,9 @@ def test_is_sentinel2_ard_collection__failure(key, value, mock_sentinel_collecti
 )
 def test_is_sentinel2_ard_collection__failure_missing(key, mock_sentinel_collection):
     del mock_sentinel_collection[key]
-    processor = Sentinel2ArdProcessor()
+    processor = RenderProcessor()
 
-    assert processor.is_sentinel2_ard_collection(mock_sentinel_collection) is False
+    assert processor.is_renderable(mock_sentinel_collection) is False
 
 
 @pytest.mark.parametrize(
@@ -96,7 +106,7 @@ def test_add_missing_fields(stac_extension, mock_sentinel_collection):
     if stac_extension:
         mock_sentinel_collection["stac_extensions"] = stac_extension
 
-    processor = Sentinel2ArdProcessor()
+    processor = RenderProcessor()
     output_data = processor.add_missing_fields(mock_sentinel_collection)
 
     for key in output_data:
@@ -107,7 +117,7 @@ def test_add_missing_fields(stac_extension, mock_sentinel_collection):
 
 
 def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
-    processor = [Sentinel2ArdProcessor()]
+    processor = [RenderProcessor()]
 
     input_data = copy.deepcopy(mock_sentinel_collection)
 
