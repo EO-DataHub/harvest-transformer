@@ -117,6 +117,10 @@ def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> di
         # Invalid JSON. File returned as is.
         logging.info(f"File {file_location} is not valid JSON.")
         return file_contents
+    except TypeError:
+        # Thrown when file does not exist at link. File returned as is.
+        logging.info(f"File {file_location} is invalid.")
+        return None
 
 
 def update_file(
@@ -193,12 +197,13 @@ def add_or_update_keys(
     # Apply transformers
     file_body = get_file_contents_as_json(key, bucket_name)
 
-    # Update catalog ID if necessary
-    file_body = update_catalog_id(file_body, target, key)
+    if file_body:
+        # Update catalog ID if necessary
+        file_body = update_catalog_id(file_body, target, key)
 
-    file_body = update_file(key, source, target_location, file_body, output_root, processors)
+        file_body = update_file(key, source, target_location, file_body, output_root, processors)
 
-    return file_body
+        return file_body
 
 
 def process_pulsar_message(msg: Message, output_root: str):
@@ -238,10 +243,11 @@ def process_pulsar_message(msg: Message, output_root: str):
                 key, source, target, output_root, bucket_name, processors
             )
 
-            # Upload file to S3
-            upload_file_s3(file_body, bucket_name, updated_key)
-            logging.info(f"Links successfully rewritten for file {key}")
-            output_data["added_keys"].append(updated_key)
+            if file_body:
+                # Upload file to S3
+                upload_file_s3(file_body, bucket_name, updated_key)
+                logging.info(f"Links successfully rewritten for file {key}")
+                output_data["added_keys"].append(updated_key)
         except ClientError as e:
             logging.error(f"Temporary error processing added key {key}: {e}")
             output_data["failed_files"]["temp_failed_keys"]["added_keys"].append(key)
@@ -258,10 +264,11 @@ def process_pulsar_message(msg: Message, output_root: str):
                 key, source, target, output_root, bucket_name, processors
             )
 
-            # Upload file to S3
-            upload_file_s3(file_body, bucket_name, updated_key)
-            logging.info(f"Links successfully rewritten for file {key}")
-            output_data["updated_keys"].append(updated_key)
+            if file_body:
+                # Upload file to S3
+                upload_file_s3(file_body, bucket_name, updated_key)
+                logging.info(f"Links successfully rewritten for file {key}")
+                output_data["updated_keys"].append(updated_key)
         except ClientError as e:
             logging.error(f"Temporary error processing updated key {key}: {e}")
             output_data["failed_files"]["temp_failed_keys"]["updated_keys"].append(key)
