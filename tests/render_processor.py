@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 from harvest_transformer.__main__ import update_file
-from harvest_transformer.sentinel2_ard_processor import RenderProcessor
+from harvest_transformer.render_processor import RenderProcessor
 
 SOURCE_PATH = "https://example.link.for.test/"
 TARGET = "/target_directory/"

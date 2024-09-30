@@ -2,11 +2,6 @@ import logging
 import os
 from typing import Union
 
-from .workflow_processor import WorkflowProcessor
-
-# Create workflow processor for generating workflow STAC definitions from CWL
-workflow_stac_processor = WorkflowProcessor()
-
 
 class RenderProcessor:
     def is_renderable(self, file_body):
@@ -54,6 +49,7 @@ class RenderProcessor:
                     "bidx": [1, 2, 3],
                     "rescale": [[0, 100], [0, 100], [0, 100]],
                     "resampling": "nearest",
+                    "tilematrixsets": {"WebMercatorQuad": [0, 30]},
                 }
             }
 
