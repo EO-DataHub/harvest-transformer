@@ -1,14 +1,27 @@
 import logging
-import os
 from typing import Union
+
+renderable_collections = {
+    "sentinel2_ard": {
+        "rgb": {
+            "title": "RGB",
+            "assets": ["cog"],
+            "bidx": [1, 2, 3],
+            "rescale": [[0, 100], [0, 100], [0, 100]],
+            "resampling": "nearest",
+            "tilematrixsets": {"WebMercatorQuad": [0, 30]},
+        }
+    }
+}
 
 
 class RenderProcessor:
     def is_renderable(self, file_body: dict) -> bool:
         """Check to see if file describes a collection that is renderable"""
-        return file_body.get("type") == "Collection" and file_body.get("id") in os.environ.get(
-            "RENDERABLE_COLLECTIONS"
-        ).split(",")
+        return (
+            file_body.get("type") == "Collection"
+            and file_body.get("id") in renderable_collections.keys()
+        )
 
     def update_file(
         self,
@@ -37,16 +50,7 @@ class RenderProcessor:
             if render_extension_url not in file_body["stac_extensions"]:
                 file_body["stac_extensions"].append(render_extension_url)
 
-            file_body["renders"] = {
-                "rgb": {
-                    "title": "RGB",
-                    "assets": ["cog"],
-                    "bidx": [1, 2, 3],
-                    "rescale": [[0, 100], [0, 100], [0, 100]],
-                    "resampling": "nearest",
-                    "tilematrixsets": {"WebMercatorQuad": [0, 30]},
-                }
-            }
+            file_body["renders"] = renderable_collections[file_body.get("id")]
 
         # Return json for further transform and upload
         return file_body

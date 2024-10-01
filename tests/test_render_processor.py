@@ -1,7 +1,5 @@
 import copy
 import json
-import os
-from unittest import mock
 
 import pytest
 
@@ -50,14 +48,6 @@ def mock_sentinel_collection():
 @pytest.fixture
 def mock_file_name():
     return "mytestfile.json"
-
-
-@pytest.fixture(autouse=True)
-def mock_environment_variables():
-    with mock.patch.dict(
-        os.environ, {"RENDERABLE_COLLECTIONS": "sentinel2_ard,aDifferentCollection"}
-    ):
-        yield
 
 
 def test_is_renderable_collection__success(mock_sentinel_collection):
