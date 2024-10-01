@@ -94,6 +94,36 @@ def test_is_sentinel2_ard_collection__failure_missing(key, mock_sentinel_collect
     assert processor.is_renderable(mock_sentinel_collection) is False
 
 
+def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
+    processor = [RenderProcessor()]
+
+    input_data = copy.deepcopy(mock_sentinel_collection)
+
+    # Execute update file process
+    output = update_file(
+        file_name=mock_file_name,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_body=mock_sentinel_collection,
+        output_root=OUTPUT_ROOT,
+        processors=processor,
+    )
+
+    # Read output in as a dictionary
+    output_json = json.loads(output)
+
+    # Check other data is unchanged
+    for key in output_json:
+        if key not in ["stac_extensions", "renders"]:
+            assert output_json[key] == input_data[key]
+
+    assert (
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+        in output_json["stac_extensions"]
+    )
+    assert isinstance(output_json["renders"], dict)
+
+
 @pytest.mark.parametrize(
     "stac_extension",
     [
@@ -101,23 +131,15 @@ def test_is_sentinel2_ard_collection__failure_missing(key, mock_sentinel_collect
         pytest.param(["items", "in", "list"], id="list"),
     ],
 )
-def test_add_missing_fields(stac_extension, mock_sentinel_collection):
+def test_sentinel2_ard_collection__missing_fields(
+    stac_extension, mock_sentinel_collection, mock_file_name
+):
+    processor = [RenderProcessor()]
 
     if stac_extension:
         mock_sentinel_collection["stac_extensions"] = stac_extension
-
-    processor = RenderProcessor()
-    output_data = processor.add_missing_fields(mock_sentinel_collection)
-
-    for key in output_data:
-        assert output_data[key] == mock_sentinel_collection[key]
-
-    assert "stac_extensions" in output_data.keys()
-    assert isinstance(output_data["stac_extensions"], list)
-
-
-def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
-    processor = [RenderProcessor()]
+    else:
+        del mock_sentinel_collection["stac_extensions"]
 
     input_data = copy.deepcopy(mock_sentinel_collection)
 
