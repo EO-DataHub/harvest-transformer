@@ -144,3 +144,43 @@ def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
         in output_json["stac_extensions"]
     )
     assert isinstance(output_json["renders"], dict)
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        pytest.param("type", "NotACollection", id="collection"),
+        pytest.param("id", "not_sentinel2_ard", id="id"),
+    ],
+)
+def test_not_sentinel2_ard_collection(key, value, mock_sentinel_collection, mock_file_name):
+    processor = [RenderProcessor()]
+
+    mock_sentinel_collection[key] = value
+
+    input_data = copy.deepcopy(mock_sentinel_collection)
+
+    # Execute update file process
+    output = update_file(
+        file_name=mock_file_name,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_body=mock_sentinel_collection,
+        output_root=OUTPUT_ROOT,
+        processors=processor,
+    )
+
+    # Read output in as a dictionary
+    output_json = json.loads(output)
+
+    # Check other data is unchanged
+    for key in output_json:
+        if key not in ["stac_extensions", "renders"]:
+            assert output_json[key] == input_data[key]
+
+    # Check renders fields not added
+    assert (
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+        not in output_json["stac_extensions"]
+    )
+    assert "renders" not in output_json.keys()
