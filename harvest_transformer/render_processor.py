@@ -4,16 +4,11 @@ from typing import Union
 
 
 class RenderProcessor:
-    def is_renderable(self, file_body):
+    def is_renderable(self, file_body: dict) -> bool:
+        """Check to see if file describes a collection that is renderable"""
         return file_body.get("type") == "Collection" and file_body.get("id") in os.environ.get(
             "RENDERABLE_COLLECTIONS"
         ).split(",")
-
-    def add_missing_fields(self, file_body):
-        if not file_body.get("stac_extensions"):
-            file_body["stac_extensions"] = []
-
-        return file_body
 
     def update_file(
         self,
@@ -35,7 +30,7 @@ class RenderProcessor:
 
         if self.is_renderable(file_body):
             logging.info(f"{file_name} is a Renderable Collection file")
-            file_body = self.add_missing_fields(file_body)
+            file_body.setdefault("stac_extensions", [])
 
             render_extension_url = "https://stac-extensions.github.io/render/v1.0.0/schema.json"
 
