@@ -36,7 +36,7 @@ class RenderProcessor:
         if self.is_renderable(file_body):
             logging.info(f"{file_name} is a Renderable Collection file")
             file_body = self.add_missing_fields(file_body)
-            self.add_missing_fields(file_body)
+
             render_extension_url = "https://stac-extensions.github.io/render/v1.0.0/schema.json"
 
             if render_extension_url not in file_body["stac_extensions"]:
