@@ -12,6 +12,7 @@ from eodhp_utils.pulsar.messages import generate_harvest_schema, get_message_dat
 from pulsar import Client, ConsumerDeadLetterPolicy, ConsumerType, Message
 
 from .link_processor import LinkProcessor
+from .render_processor import RenderProcessor
 from .utils import get_file_from_url
 from .workflow_processor import WorkflowProcessor
 
@@ -144,6 +145,7 @@ def update_file(
     # Convert json to string for file upload
     if isinstance(file_body, dict):
         file_body = json.dumps(file_body)
+
     return file_body
 
 
@@ -229,7 +231,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             "deleted_keys": [],
         },
     }
-    processors = [WorkflowProcessor(), LinkProcessor()]
+    processors = [WorkflowProcessor(), LinkProcessor(), RenderProcessor()]
 
     for key in data_dict.get("added_keys"):
         try:
