@@ -295,7 +295,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             output_data["deleted_keys"].append(updated_key)
         except URLAccessError as e:
             logging.exception(f"Unable to access key {key}: {e}")
-            error_data["failed_files"]["perm_failed_keys"]["updated_keys"].append(key)
+            error_data["failed_files"]["perm_failed_keys"]["deleted_keys"].append(key)
             continue
         except ClientError as e:
             logging.error(f"Temporary error processing deleted key {key}: {e}")
