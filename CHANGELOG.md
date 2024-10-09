@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.11 (09-10-2024)
+
+- Update error handling for invalid links
+
+## v0.1.10 (01-10-2024)
+
+- Update error handling and retries
+- Add render processor
+
 ## v0.1.9 (24-07-2024)
 
 - Bugfix to correct Catalog ID update logic:
