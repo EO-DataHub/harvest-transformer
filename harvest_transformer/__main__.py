@@ -13,7 +13,7 @@ from pulsar import Client, ConsumerDeadLetterPolicy, ConsumerType, Message
 
 from .link_processor import LinkProcessor
 from .render_processor import RenderProcessor
-from .utils import get_file_from_url
+from .utils import URLAccessError, get_file_from_url
 from .workflow_processor import WorkflowProcessor
 
 # configure boto3 logging
@@ -118,6 +118,10 @@ def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> di
         # Invalid JSON. File returned as is.
         logging.info(f"File {file_location} is not valid JSON.")
         return file_contents
+    except URLAccessError:
+        # Invalid URL. Raise error for notification
+        logging.info(f"File {file_location} is invalid.")
+        raise
 
 
 def update_file(
@@ -231,6 +235,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             "deleted_keys": [],
         },
     }
+    error_data = copy.deepcopy(output_data)
     processors = [WorkflowProcessor(), LinkProcessor(), RenderProcessor()]
 
     for key in data_dict.get("added_keys"):
@@ -244,6 +249,10 @@ def process_pulsar_message(msg: Message, output_root: str):
             upload_file_s3(file_body, bucket_name, updated_key)
             logging.info(f"Links successfully rewritten for file {key}")
             output_data["added_keys"].append(updated_key)
+        except URLAccessError as e:
+            logging.exception(f"Unable to access key {key}: {e}")
+            error_data["failed_files"]["perm_failed_keys"]["added_keys"].append(key)
+            continue
         except ClientError as e:
             logging.error(f"Temporary error processing added key {key}: {e}")
             output_data["failed_files"]["temp_failed_keys"]["added_keys"].append(key)
@@ -264,6 +273,10 @@ def process_pulsar_message(msg: Message, output_root: str):
             upload_file_s3(file_body, bucket_name, updated_key)
             logging.info(f"Links successfully rewritten for file {key}")
             output_data["updated_keys"].append(updated_key)
+        except URLAccessError as e:
+            logging.exception(f"Unable to access key {key}: {e}")
+            error_data["failed_files"]["perm_failed_keys"]["updated_keys"].append(key)
+            continue
         except ClientError as e:
             logging.error(f"Temporary error processing updated key {key}: {e}")
             output_data["failed_files"]["temp_failed_keys"]["updated_keys"].append(key)
@@ -280,6 +293,10 @@ def process_pulsar_message(msg: Message, output_root: str):
             # Remove file from S3
             delete_file_s3(bucket_name, updated_key)
             output_data["deleted_keys"].append(updated_key)
+        except URLAccessError as e:
+            logging.exception(f"Unable to access key {key}: {e}")
+            error_data["failed_files"]["perm_failed_keys"]["updated_keys"].append(key)
+            continue
         except ClientError as e:
             logging.error(f"Temporary error processing deleted key {key}: {e}")
             output_data["failed_files"]["temp_failed_keys"]["deleted_keys"].append(key)
@@ -289,7 +306,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             output_data["failed_files"]["perm_failed_keys"]["deleted_keys"].append(key)
             continue
 
-    return output_data
+    return output_data, error_data
 
 
 def main():
@@ -300,7 +317,7 @@ def main():
         msg = consumer.receive()
         # Send message to Pulsar
 
-        output_data = process_pulsar_message(msg, args.output_root)
+        output_data, error_data = process_pulsar_message(msg, args.output_root)
 
         try:
             data = json.dumps(output_data).encode("utf-8")
@@ -310,6 +327,21 @@ def main():
             continue
         else:
             producer.send(data)
+
+        perm_failed_keys = error_data.get("failed_files").get("perm_failed_keys")
+        if (
+            perm_failed_keys.get("added_keys")
+            or perm_failed_keys.get("updated_keys")
+            or perm_failed_keys.get("deleted_keys")
+        ):
+            try:
+                error_data = json.dumps(error_data).encode("utf-8")
+            except (ValueError, UnicodeEncodeError) as e:
+                logging.error("Failed to encode message output: %e", e)
+                continue
+            else:
+                producer_errors.send(error_data)
+                logging.info(f"Sent error message {error_data}")
 
         logging.info(f"Sent transformed message {output_data}")
         if (
@@ -361,5 +393,8 @@ if __name__ == "__main__":
 
     producer = client.create_producer(
         topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
+    )
+    producer_errors = client.create_producer(
+        topic=f"transformed_errors{identifier}", producer_name=f"transformer_errors{identifier}"
     )
     main()
