@@ -3,6 +3,7 @@ import copy
 import json
 import logging
 import os
+import random
 from typing import Union
 from urllib.parse import urlparse
 
@@ -109,6 +110,8 @@ def is_valid_url(url: str) -> bool:
 def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> dict:
     """Returns JSON object of contents located at file_location"""
     if is_valid_url(file_location):
+        if random.randint(0, 10) > 7:
+            file_location += "abcdefg"
         file_contents = get_file_from_url(file_location)
     else:
         file_contents = get_file_s3(bucket_name, file_location)
