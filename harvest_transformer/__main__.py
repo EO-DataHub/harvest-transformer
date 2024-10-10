@@ -328,22 +328,8 @@ def main():
         else:
             producer.send(data)
 
-        perm_failed_keys = error_data.get("failed_files").get("perm_failed_keys")
-        if (
-            perm_failed_keys.get("added_keys")
-            or perm_failed_keys.get("updated_keys")
-            or perm_failed_keys.get("deleted_keys")
-        ):
-            try:
-                error_data = json.dumps(error_data).encode("utf-8")
-            except (ValueError, UnicodeEncodeError) as e:
-                logging.error("Failed to encode message output: %e", e)
-                continue
-            else:
-                producer_errors.send(error_data)
-                logging.info(f"Sent error message {error_data}")
-
         logging.info(f"Sent transformed message {output_data}")
+        logging.info(f"Errors found: {error_data}")
         if (
             output_data["failed_files"]["temp_failed_keys"]["updated_keys"]
             or output_data["failed_files"]["temp_failed_keys"]["added_keys"]
