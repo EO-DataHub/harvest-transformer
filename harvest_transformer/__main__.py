@@ -380,7 +380,5 @@ if __name__ == "__main__":
     producer = client.create_producer(
         topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
     )
-    producer_errors = client.create_producer(
-        topic=f"transformed_errors{identifier}", producer_name=f"transformer_errors{identifier}"
-    )
+
     main()
