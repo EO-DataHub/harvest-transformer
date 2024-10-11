@@ -71,7 +71,7 @@ def get_new_catalog_id_from_target(target: str) -> str:
     """Extract catalog ID from target"""
     # Currently take catalog_id directly under top-level catalog,
     # as current harvested catalogs do not support nesting
-    new_id = target.rsplit("/").split("/")[-1]
+    new_id = target.rstrip("/").split("/")[-1]
 
     if new_id == "":
         return None
