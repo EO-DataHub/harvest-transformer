@@ -378,7 +378,9 @@ if __name__ == "__main__":
     )
 
     producer = client.create_producer(
-        topic=f"transformed{identifier}", producer_name=f"transformer{identifier}"
+        topic=f"transformed{identifier}",
+        producer_name=f"transformer{identifier}",
+        chunking_enabled=True,
     )
 
     main()
