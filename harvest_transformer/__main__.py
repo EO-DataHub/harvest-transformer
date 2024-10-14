@@ -329,7 +329,15 @@ def main():
             producer.send(data)
 
         logging.info(f"Sent transformed message {output_data}")
-        logging.info(f"Errors found: {error_data}")
+        if (
+            error_data["failed_files"]["perm_failed_keys"]["added_keys"]
+            or error_data["failed_files"]["perm_failed_keys"]["updated_keys"]
+            or error_data["failed_files"]["perm_failed_keys"]["deleted_keys"]
+        ):
+            logging.info(f"URL errors found: {error_data}")
+        else:
+            logging.info("No URL errors found")
+
         if (
             output_data["failed_files"]["temp_failed_keys"]["updated_keys"]
             or output_data["failed_files"]["temp_failed_keys"]["added_keys"]
