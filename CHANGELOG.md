@@ -3,6 +3,7 @@
 ## v0.1.11 (09-10-2024)
 
 - Update error handling for invalid links
+- Add chunking to pulsar messages
 
 ## v0.1.10 (01-10-2024)
 
