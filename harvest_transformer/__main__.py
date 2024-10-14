@@ -120,7 +120,7 @@ def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> di
         return file_contents
     except URLAccessError:
         # Invalid URL. Raise error for notification
-        logging.info(f"File {file_location} is invalid.")
+        logging.error(f"File {file_location} is invalid.")
         raise
 
 
@@ -250,7 +250,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             logging.info(f"Links successfully rewritten for file {key}")
             output_data["added_keys"].append(updated_key)
         except URLAccessError as e:
-            logging.exception(f"Unable to access key {key}: {e}")
+            logging.error(f"Unable to access key {key}: {e}")
             error_data["failed_files"]["perm_failed_keys"]["added_keys"].append(key)
             continue
         except ClientError as e:
@@ -274,7 +274,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             logging.info(f"Links successfully rewritten for file {key}")
             output_data["updated_keys"].append(updated_key)
         except URLAccessError as e:
-            logging.exception(f"Unable to access key {key}: {e}")
+            logging.error(f"Unable to access key {key}: {e}")
             error_data["failed_files"]["perm_failed_keys"]["updated_keys"].append(key)
             continue
         except ClientError as e:
@@ -294,7 +294,7 @@ def process_pulsar_message(msg: Message, output_root: str):
             delete_file_s3(bucket_name, updated_key)
             output_data["deleted_keys"].append(updated_key)
         except URLAccessError as e:
-            logging.exception(f"Unable to access key {key}: {e}")
+            logging.error(f"Unable to access key {key}: {e}")
             error_data["failed_files"]["perm_failed_keys"]["deleted_keys"].append(key)
             continue
         except ClientError as e:
