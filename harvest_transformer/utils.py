@@ -3,11 +3,16 @@ import urllib.request
 from urllib.request import urlopen
 
 
+class URLAccessError(Exception):
+    pass
+
+
 def get_file_from_url(url: str, retries: int = 0) -> str:
     """Returns contents of data available at given URL"""
     if retries == 3:
         # Max number of retries
-        return None
+        logging.error(f"Unable to access {url}, URL invalid")
+        raise URLAccessError(f"Unable to access {url}, URL invalid")
     try:
         with urlopen(url, timeout=5) as response:
             body = response.read()
