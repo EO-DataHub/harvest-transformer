@@ -37,20 +37,57 @@ class LinkProcessor:
         self, json_data: dict, source: str, target_location: str, output_self: str, output_root: str
     ) -> dict:
         """Rewrite links so that they are suitable for an EODHP catalogue"""
+        relations_to_rewrite = ["child", "collection", "item", "items", "parent", "root", "self"]
+        relations_to_keep = [
+            "about",
+            "author",
+            "cite-as",
+            "copyright",
+            "external",
+            "license",
+            "lrdd",
+            "service",
+            "service-desc",
+            "service-doc",
+            "service-meta",
+            "thumbnail",
+            "via",
+        ]
+
+        new_links = []
+
         for link in self.find_all_links(json_data):
-            if not link.get("href").startswith(output_root):
-                if link.get("href").startswith(source):
+            href = link.get("href")
+            rel = link.get("rel")
+
+            if href.startswith(output_root):
+                # Link is already EODH link
+                new_links.append(link)
+                continue
+
+            parsed_href = urlparse(href)
+
+            if rel in relations_to_rewrite:
+                if href.startswith(source):
                     # Link is an absolute link. Replace the source.
-                    link["href"] = link["href"].replace(source, target_location)
-                elif link.get("rel") == "parent":
+                    link["href"] = href.replace(source, target_location)
+                elif rel == "parent":
+                    # Link is a parent link. Path to parent via self link.
                     link["href"] = output_self.rsplit("/", 2)[0]
-                elif link.get("href").startswith("http"):
-                    # Link is an absolute link with a different root than expected.
-                    # Assume valid link outside of EODH
+                elif href.startswith(output_root.strip("/")):
+                    # Link is an EODH link. Do nothing.
                     pass
-                else:
+                elif not parsed_href.scheme and not parsed_href.netloc:
                     # Link is a relative link. Convert to absolute link.
-                    link["href"] = urljoin(output_self.rsplit("/", 1)[0], link.get("href"))
+                    link["href"] = urljoin(output_self.rsplit("/", 1)[0], href)
+                else:
+                    # Link cannot be rewritten and should not be external. Drop it.
+                    continue
+                new_links.append(link)
+            elif rel in relations_to_keep:
+                new_links.append(link)
+
+        json_data["links"] = new_links
         return json_data
 
     def add_missing_links(self, json_data: dict, new_root: str, new_self: str) -> dict:
@@ -107,7 +144,7 @@ class LinkProcessor:
                 link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
             ][0]
 
-        output_self = self_link.replace(source, target_location)
+        output_self = self_link.replace(source, target_location, 1)
         if not self.is_valid_url(output_self):
             logging.error(
                 f"File {file_name} does not produce a valid self link with given "
