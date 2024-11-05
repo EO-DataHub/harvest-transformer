@@ -2,6 +2,8 @@ import logging
 from typing import Union
 from urllib.parse import urljoin, urlparse
 
+import boto3
+
 from .workflow_processor import WorkflowProcessor
 
 # Create workflow processor for generating workflow STAC definitions from CWL
@@ -9,6 +11,39 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
+    SPDX_LICENSE_URL = "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/"
+    SPDX_LICENSE_LIST = []  # This will be populated with the list of valid SPDX IDs
+
+    def __init__(self):
+        # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
+        bucket_name = "eodhp-dev-spdx-public"
+        prefix = "harvested/default/spdx/license-list-data/main/html/"
+        self.SPDX_LICENSE_LIST = self.retrieve_spdx_license_list(
+            bucket_name=bucket_name, prefix=prefix
+        )
+
+    def list_s3_files(self, bucket_name, prefix):
+        # Initialize an S3 client
+        s3 = boto3.client("s3")
+
+        # List objects within the specified prefix
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+
+        # Extract file names without the extension
+        if "Contents" in response:
+            files = [
+                obj["Key"].split("/")[-1].rsplit(".", 1)[0]
+                for obj in response["Contents"]
+                if obj["Key"].endswith(".html")
+            ]
+            return files
+        else:
+            return []
+
+    def retrieve_spdx_license_list(self, bucket_name, prefix):
+        # Retrieve the list of valid SPDX IDs from the S3 bucket
+        return self.list_s3_files(bucket_name, prefix)
+
     def is_valid_url(self, url: str) -> bool:
         """Checks if a given URL is valid"""
         try:
@@ -74,6 +109,24 @@ class LinkProcessor:
         if not link_exists:
             links.append({"rel": rel, "href": href})
 
+    def add_license_link(self, json_data: dict, rel: str, href: str):
+        """Ensures unique license links, overwriting if already present."""
+        links = json_data.get("links", [])
+        for link in links:
+            if link.get("href") == href:
+                return
+        links.append({"rel": rel, "href": href})
+        json_data["links"] = links
+
+    def ensure_license_links(self, json_data: dict):
+        """Ensure that valid SPDX license links are present."""
+        license_field = json_data.get("license")
+        if license_field and license_field in self.SPDX_LICENSE_LIST:
+            text_url = urljoin(self.SPDX_LICENSE_URL + "text/", f"{license_field}.txt")
+            html_url = urljoin(self.SPDX_LICENSE_URL + "html/", f"{license_field}.html")
+            self.add_license_link(json_data, "license", text_url)
+            self.add_license_link(json_data, "license", html_url)
+
     def update_file(
         self,
         file_name: str,
@@ -118,6 +171,9 @@ class LinkProcessor:
 
         # Update links to STAC best practices
         file_body = self.add_missing_links(file_body, output_root, output_self)
+
+        # Ensure SPDX license links are present
+        self.ensure_license_links(file_body)
 
         # Update links to refer to EODH
         file_body = self.rewrite_links(file_body, source, target_location, output_self, output_root)

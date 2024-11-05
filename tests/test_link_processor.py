@@ -1,5 +1,6 @@
 import copy
 import json
+import unittest
 
 from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
@@ -162,3 +163,115 @@ def test_workflow_does_not_alter_non_workflows():
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
+
+
+class TestLinkProcessor(unittest.TestCase):
+    def setUp(self):
+        self.processor = LinkProcessor()
+
+    def test_add_new_license_link(self):
+        json_data = {"links": []}
+        self.processor.add_license_link(
+            json_data,
+            "license",
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+        self.assertEqual(len(json_data["links"]), 1)
+        self.assertEqual(json_data["links"][0]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][0]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+
+    def test_avoid_duplicate_license_link(self):
+        json_data = {
+            "links": [
+                {
+                    "rel": "license",
+                    "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                }
+            ]
+        }
+        self.processor.add_license_link(
+            json_data,
+            "license",
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+        self.assertEqual(len(json_data["links"]), 1)
+        self.assertEqual(json_data["links"][0]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][0]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+
+    def test_add_multiple_license_links(self):
+        json_data = {
+            "links": [
+                {
+                    "rel": "license",
+                    "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                }
+            ]
+        }
+        self.processor.add_license_link(
+            json_data,
+            "license",
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/html/APSL-1.2.html",
+        )
+        self.assertEqual(len(json_data["links"]), 2)
+        self.assertEqual(json_data["links"][0]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][0]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+        self.assertEqual(json_data["links"][1]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][1]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/html/APSL-1.2.html",
+        )
+
+    def test_add_license_link_to_existing_links(self):
+        json_data = {
+            "links": [
+                {"rel": "self", "href": "https://example.com/self"},
+                {"rel": "parent", "href": "https://example.com/parent"},
+            ]
+        }
+        self.processor.add_license_link(
+            json_data,
+            "license",
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+        self.assertEqual(len(json_data["links"]), 3)
+        self.assertEqual(json_data["links"][2]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][2]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+
+    def test_avoid_duplicate_license_links_among_existing_links(self):
+        json_data = {
+            "links": [
+                {"rel": "self", "href": "https://example.com/self"},
+                {"rel": "parent", "href": "https://example.com/parent"},
+                {
+                    "rel": "license",
+                    "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                },
+            ]
+        }
+        self.processor.add_license_link(
+            json_data,
+            "license",
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+        self.assertEqual(len(json_data["links"]), 3)
+        self.assertEqual(json_data["links"][2]["rel"], "license")
+        self.assertEqual(
+            json_data["links"][2]["href"],
+            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
