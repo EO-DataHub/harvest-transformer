@@ -38,20 +38,15 @@ class LinkProcessor:
     ) -> dict:
         """Rewrite links so that they are suitable for an EODHP catalogue"""
         relations_to_rewrite = ["child", "collection", "item", "items", "parent", "root", "self"]
-        relations_to_keep = [
-            "about",
-            "author",
-            "cite-as",
-            "copyright",
-            "external",
-            "license",
-            "lrdd",
-            "service",
+        # Remove relations that refer to api describing the original catalogue
+        relations_to_remove = [
+            "aggregate",
+            "aggregations",
+            "queryables",
+            "http:/www.opengis.net/def/rel/ogc/1.0/queryables",
+            "search",
             "service-desc",
             "service-doc",
-            "service-meta",
-            "thumbnail",
-            "via",
         ]
 
         new_links = []
@@ -83,9 +78,12 @@ class LinkProcessor:
                 else:
                     # Link cannot be rewritten and should not be external. Drop it.
                     continue
-                new_links.append(link)
-            elif rel in relations_to_keep:
-                new_links.append(link)
+            elif rel in relations_to_remove:
+                # Drop links that we know are not relevant to the EODH harvested catalogue
+                continue
+
+            # Keep links by default
+            new_links.append(link)
 
         json_data["links"] = new_links
         return json_data
