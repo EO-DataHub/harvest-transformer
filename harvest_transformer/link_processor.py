@@ -79,7 +79,7 @@ class LinkProcessor:
                     pass
                 elif not parsed_href.scheme and not parsed_href.netloc:
                     # Link is a relative link. Convert to absolute link.
-                    link["href"] = urljoin(output_self.rsplit("/", 1)[0], href)
+                    link["href"] = urljoin(output_self, href)
                 else:
                     # Link cannot be rewritten and should not be external. Drop it.
                     continue

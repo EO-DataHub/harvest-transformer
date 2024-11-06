@@ -44,7 +44,7 @@
     {
       "rel": "collection",
       "type": "application/json",
-      "href": "../example_collection"
+      "href": "../../example_collection"
     },
     {
       "rel": "thumbnail",
