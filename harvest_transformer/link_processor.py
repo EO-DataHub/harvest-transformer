@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Union
 from urllib.parse import urljoin, urlparse
 
@@ -11,21 +12,20 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    SPDX_LICENSE_URL = "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/"
+    SPDX_LICENSE_PATH = "harvested/default/spdx/license-list-data/main/"
     SPDX_LICENSE_LIST = []  # This will be populated with the list of valid SPDX IDs
 
     def __init__(self):
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
-        bucket_name = "eodhp-dev-spdx-public"
-        prefix = "harvested/default/spdx/license-list-data/main/html/"
-        self.SPDX_LICENSE_LIST = self.retrieve_spdx_license_list(
-            bucket_name=bucket_name, prefix=prefix
+        bucket_name = os.getenv("S3_BUCKET")
+        self.SPDX_LICENSE_LIST = self.list_s3_files(
+            bucket_name=bucket_name, prefix=self.SPDX_LICENSE_PATH + "html/"
         )
 
     def list_s3_files(self, bucket_name, prefix):
         # Initialize an S3 client
         s3 = boto3.client("s3")
-
+        logging.info(f"Bucket name {bucket_name} and prefix {prefix}")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
 
@@ -39,10 +39,6 @@ class LinkProcessor:
             return files
         else:
             return []
-
-    def retrieve_spdx_license_list(self, bucket_name, prefix):
-        # Retrieve the list of valid SPDX IDs from the S3 bucket
-        return self.list_s3_files(bucket_name, prefix)
 
     def is_valid_url(self, url: str) -> bool:
         """Checks if a given URL is valid"""
@@ -112,20 +108,31 @@ class LinkProcessor:
     def add_license_link(self, json_data: dict, rel: str, href: str):
         """Ensures unique license links, overwriting if already present."""
         links = json_data.get("links", [])
-        for link in links:
-            if link.get("href") == href:
-                return
-        links.append({"rel": rel, "href": href})
+        link_type = "text/plain" if href.endswith(".txt") else "text/html"
+        links.append({"rel": rel, "href": href, "type": link_type})
         json_data["links"] = links
 
     def ensure_license_links(self, json_data: dict):
         """Ensure that valid SPDX license links are present."""
+        links = json_data.get("links", [])
+        # If a license link already exists, do not add new ones
+        for link in links:
+            if link.get("rel") == "license":
+                return
         license_field = json_data.get("license")
-        if license_field and license_field in self.SPDX_LICENSE_LIST:
-            text_url = urljoin(self.SPDX_LICENSE_URL + "text/", f"{license_field}.txt")
-            html_url = urljoin(self.SPDX_LICENSE_URL + "html/", f"{license_field}.html")
-            self.add_license_link(json_data, "license", text_url)
-            self.add_license_link(json_data, "license", html_url)
+
+        if not license_field or license_field not in self.SPDX_LICENSE_LIST:
+            return
+
+        hosted_zone = os.getenv("HOSTED_ZONE")
+        spdx_license_path = self.SPDX_LICENSE_PATH
+        base_url = f"https://{hosted_zone}/{spdx_license_path}"
+
+        text_url = urljoin(base_url + "/text/", f"{license_field}.txt")
+        html_url = urljoin(base_url + "/html/", f"{license_field}.html")
+
+        self.add_license_link(json_data, "license", text_url)
+        self.add_license_link(json_data, "license", html_url)
 
     def update_file(
         self,
