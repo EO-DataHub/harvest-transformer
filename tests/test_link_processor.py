@@ -1,6 +1,8 @@
 import copy
 import json
+import os
 import unittest
+from unittest.mock import Mock, patch
 
 from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
@@ -11,10 +13,15 @@ TARGET = "/target_directory/"
 OUTPUT_ROOT = "https://output.root.test"
 
 # Ensure you update this list when other transformers are added
-PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
+with patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files") as mock_list_s3_files:
+    mock_list_s3_files.return_value = []
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
-def test_links_replacement_only():
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
+def test_links_replacement_only(mock_list_s3_files):
+    # Configure mocks
+    mock_list_s3_files.return_value = []
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
@@ -73,7 +80,10 @@ def test_links_replacement_only():
     assert output_json["links"] == expected_links
 
 
-def test_links_add_missing_links():
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
+def test_links_add_missing_links(mock_list_s3_files):
+    # Configure mocks
+    mock_list_s3_files.return_value = []
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
@@ -167,7 +177,11 @@ def test_workflow_does_not_alter_non_workflows():
 
 class TestLinkProcessor(unittest.TestCase):
     def setUp(self):
-        self.processor = LinkProcessor()
+        with patch(
+            "harvest_transformer.link_processor.LinkProcessor.list_s3_files", new_callable=Mock
+        ) as mock_list_s3_files:
+            mock_list_s3_files.return_value = ["AAL"]
+            self.processor = LinkProcessor()
 
     def test_add_new_license_link(self):
         json_data = {"links": []}
@@ -183,27 +197,54 @@ class TestLinkProcessor(unittest.TestCase):
             "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
         )
 
-    def test_avoid_duplicate_license_link(self):
+    @patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk"})
+    def test_add_new_license_link_from_id(self):
+        json_data = {"links": [], "license": "AAL"}
+        self.processor.ensure_license_links(json_data)
+        self.assertEqual(len(json_data["links"]), 2)
+        self.assertEqual(json_data["links"][0]["rel"], "license")
+        self.assertEqual(
+            json_data["links"],
+            [
+                {
+                    "rel": "license",
+                    "type": "text/plain",
+                    "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+                },
+                {
+                    "rel": "license",
+                    "type": "text/html",
+                    "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+                },
+            ],
+        )
+
+    @patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk"})
+    def test_dont_add_license_link_when_present(self):
         json_data = {
             "links": [
                 {
                     "rel": "license",
-                    "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                    "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
                 }
             ]
         }
-        self.processor.add_license_link(
-            json_data,
-            "license",
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
-        )
+        self.processor.ensure_license_links(json_data)
         self.assertEqual(len(json_data["links"]), 1)
         self.assertEqual(json_data["links"][0]["rel"], "license")
         self.assertEqual(
-            json_data["links"][0]["href"],
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+            json_data,
+            {
+                "links": [
+                    {
+                        "rel": "license",
+                        "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                    }
+                ]
+            },
         )
 
+    @patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk"})
     def test_add_multiple_license_links(self):
         json_data = {
             "links": [
@@ -230,46 +271,56 @@ class TestLinkProcessor(unittest.TestCase):
             "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/html/APSL-1.2.html",
         )
 
+    @patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk"})
     def test_add_license_link_to_existing_links(self):
         json_data = {
+            "license": "AAL",
             "links": [
                 {"rel": "self", "href": "https://example.com/self"},
                 {"rel": "parent", "href": "https://example.com/parent"},
-            ]
+            ],
         }
-        self.processor.add_license_link(
+        self.processor.ensure_license_links(
             json_data,
-            "license",
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
         )
-        self.assertEqual(len(json_data["links"]), 3)
-        self.assertEqual(json_data["links"][2]["rel"], "license")
+        self.assertEqual(len(json_data["links"]), 4)
         self.assertEqual(
-            json_data["links"][2]["href"],
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
-        )
-
-    def test_avoid_duplicate_license_links_among_existing_links(self):
-        json_data = {
-            "links": [
+            json_data["links"],
+            [
                 {"rel": "self", "href": "https://example.com/self"},
                 {"rel": "parent", "href": "https://example.com/parent"},
                 {
                     "rel": "license",
-                    "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                    "type": "text/plain",
+                    "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
                 },
-            ]
-        }
-        self.processor.add_license_link(
-            json_data,
-            "license",
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+                {
+                    "rel": "license",
+                    "type": "text/html",
+                    "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+                },
+            ],
         )
-        self.assertEqual(len(json_data["links"]), 3)
-        self.assertEqual(json_data["links"][2]["rel"], "license")
+
+    @patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk"})
+    def test_add_license_link_unknown_license_id(self):
+        json_data = {
+            "license": "proprietary",
+            "links": [
+                {"rel": "self", "href": "https://example.com/self"},
+                {"rel": "parent", "href": "https://example.com/parent"},
+            ],
+        }
+        self.processor.ensure_license_links(
+            json_data,
+        )
+        self.assertEqual(len(json_data["links"]), 2)
         self.assertEqual(
-            json_data["links"][2]["href"],
-            "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+            json_data["links"],
+            [
+                {"rel": "self", "href": "https://example.com/self"},
+                {"rel": "parent", "href": "https://example.com/parent"},
+            ],
         )
 
 

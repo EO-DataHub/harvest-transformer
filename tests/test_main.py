@@ -204,10 +204,15 @@ class Message:
         return self.msg
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.update_file")
 @patch("harvest_transformer.__main__.upload_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
-def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3, mock_update_file):
+def test_process_pulsar_message_add(
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file, mock_list_s3_files
+):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
@@ -277,12 +282,15 @@ def test_process_pulsar_message_add(mock_get_file_from_url, mock_upload_file_s3,
     assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.update_file")
 @patch("harvest_transformer.__main__.upload_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
 def test_process_pulsar_message_update(
-    mock_get_file_from_url, mock_upload_file_s3, mock_update_file
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file, mock_list_s3_files
 ):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
@@ -352,12 +360,15 @@ def test_process_pulsar_message_update(
     assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.update_file")
 @patch("harvest_transformer.__main__.delete_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
 def test_process_pulsar_message_delete(
-    mock_get_file_from_url, mock_delete_file_s3, mock_update_file
+    mock_get_file_from_url, mock_delete_file_s3, mock_update_file, mock_list_s3_files
 ):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
@@ -427,12 +438,15 @@ def test_process_pulsar_message_delete(
     assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.update_file")
 @patch("harvest_transformer.__main__.upload_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
 def test_process_pulsar_message_failure(
-    mock_get_file_from_url, mock_upload_file_s3, mock_update_file
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file, mock_list_s3_files
 ):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
@@ -510,7 +524,10 @@ def test_process_pulsar_message_failure(
     )
 
 
-def test_process_pulsar_message_failure_invalid_url():
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
+def test_process_pulsar_message_failure_invalid_url(mock_list_s3_files):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
 
     # Input Pulsar message
     msg = {
@@ -560,9 +577,14 @@ def test_process_pulsar_message_failure_invalid_url():
     )
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.delete_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
-def test_process_pulsar_message_deleted_keys(mock_get_file_from_url, mock_delete_file_s3):
+def test_process_pulsar_message_deleted_keys(
+    mock_get_file_from_url, mock_delete_file_s3, mock_list_s3_files
+):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
@@ -629,12 +651,16 @@ def test_process_pulsar_message_deleted_keys(mock_get_file_from_url, mock_delete
     assert output_data["failed_files"]["perm_failed_keys"]["deleted_keys"] == []
 
 
+@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_files")
 @patch("harvest_transformer.__main__.update_file")
 @patch("harvest_transformer.__main__.upload_file_s3")
 @patch("harvest_transformer.__main__.get_file_from_url")
 def test_process_pulsar_message_updated_keys(
-    mock_get_file_from_url, mock_upload_file_s3, mock_update_file
+    mock_get_file_from_url, mock_upload_file_s3, mock_update_file, mock_list_s3_files
 ):
+    # Mock list_s3_files to return an empty list
+    mock_list_s3_files.return_value = []
+
     # Mock return value for get_file_from_url
     stac_location = "test_data/test_links_replacement_only.json"
     with open(stac_location, "r") as file:
