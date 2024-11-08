@@ -177,9 +177,12 @@ def test_workflow_does_not_alter_non_workflows():
 
 class TestLinkProcessor(unittest.TestCase):
     def setUp(self):
-        with patch(
-            "harvest_transformer.link_processor.LinkProcessor.list_s3_files", new_callable=Mock
-        ) as mock_list_s3_files:
+        with (
+            patch(
+                "harvest_transformer.link_processor.LinkProcessor.list_s3_files", new_callable=Mock
+            ) as mock_list_s3_files,
+            patch.dict(os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}),
+        ):
             mock_list_s3_files.return_value = ["AAL"]
             self.processor = LinkProcessor()
 

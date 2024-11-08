@@ -17,9 +17,10 @@ class LinkProcessor:
 
     def __init__(self):
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
-        bucket_name = os.getenv("S3_BUCKET")
+        self.HOSTED_ZONE = os.getenv("HOSTED_ZONE")
+        self.SPDX_BUCKET_NAME = os.getenv("S3_BUCKET")
         self.SPDX_LICENSE_LIST = self.list_s3_files(
-            bucket_name=bucket_name, prefix=self.SPDX_LICENSE_PATH + "html/"
+            bucket_name=self.SPDX_BUCKET_NAME, prefix=self.SPDX_LICENSE_PATH + "html/"
         )
 
     def list_s3_files(self, bucket_name, prefix):
@@ -124,9 +125,8 @@ class LinkProcessor:
         if not license_field or license_field not in self.SPDX_LICENSE_LIST:
             return
 
-        hosted_zone = os.getenv("HOSTED_ZONE")
         spdx_license_path = self.SPDX_LICENSE_PATH
-        base_url = f"https://{hosted_zone}/{spdx_license_path}"
+        base_url = f"https://{self.HOSTED_ZONE}/{spdx_license_path}"
 
         text_url = urljoin(base_url + "/text/", f"{license_field}.txt")
         html_url = urljoin(base_url + "/html/", f"{license_field}.html")
