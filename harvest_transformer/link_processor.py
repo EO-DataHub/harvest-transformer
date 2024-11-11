@@ -5,6 +5,7 @@ from urllib.parse import urljoin, urlparse
 
 import boto3
 
+from .utils import SPDXLicenseError
 from .workflow_processor import WorkflowProcessor
 
 # Create workflow processor for generating workflow STAC definitions from CWL
@@ -12,23 +13,23 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    SPDX_LICENSE_PATH = "harvested/default/spdx/license-list-data/main/"
-    SPDX_LICENSE_LIST = []  # This will be populated with the list of valid SPDX IDs
+    spdx_license_path = "harvested/default/spdx/license-list-data/main/"
+    spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
     def __init__(self):
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
-        self.HOSTED_ZONE = os.getenv("HOSTED_ZONE")
-        self.SPDX_BUCKET_NAME = os.getenv("S3_BUCKET")
-        self.SPDX_LICENSE_LIST = self.list_s3_files(
-            bucket_name=self.SPDX_BUCKET_NAME, prefix=self.SPDX_LICENSE_PATH + "html/"
+        self.hosted_zone = os.getenv("HOSTED_ZONE")
+        self.spdx_bucket_name = os.getenv("S3_BUCKET")
+        self.spdx_license_list = self.list_s3_license_files(
+            bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
 
-    def list_s3_files(self, bucket_name, prefix):
+    def list_s3_license_files(self, bucket_name, prefix):
         # Initialize an S3 client
         s3 = boto3.client("s3")
         logging.info(f"Bucket name {bucket_name} and prefix {prefix}")
         # List objects within the specified prefix
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
 
         # Extract file names without the extension
         if "Contents" in response:
@@ -39,7 +40,9 @@ class LinkProcessor:
             ]
             return files
         else:
-            return []
+            raise SPDXLicenseError(
+                f"No html license files found in {bucket_name} with prefix {prefix}"
+            )
 
     def is_valid_url(self, url: str) -> bool:
         """Checks if a given URL is valid"""
@@ -49,10 +52,10 @@ class LinkProcessor:
         except ValueError:
             return False
 
-    def delete_sections(self, json_data: dict) -> dict:
+    def delete_sections(self, stac_data: dict) -> dict:
         """Remove all unnecessary data from a file."""
-        json_data.pop("conformsTo", None)
-        return json_data
+        stac_data.pop("conformsTo", None)
+        return stac_data
 
     def find_all_links(self, node):
         """Recursively find all nested links in a given item"""
@@ -66,10 +69,10 @@ class LinkProcessor:
                 yield from self.find_all_links(j)
 
     def rewrite_links(
-        self, json_data: dict, source: str, target_location: str, output_self: str, output_root: str
+        self, stac_data: dict, source: str, target_location: str, output_self: str, output_root: str
     ) -> dict:
         """Rewrite links so that they are suitable for an EODHP catalogue"""
-        for link in self.find_all_links(json_data):
+        for link in self.find_all_links(stac_data):
             if not link.get("href").startswith(output_root):
                 if link.get("href").startswith(source):
                     # Link is an absolute link. Replace the source.
@@ -83,22 +86,22 @@ class LinkProcessor:
                 else:
                     # Link is a relative link. Convert to absolute link.
                     link["href"] = urljoin(output_self.rsplit("/", 1)[0], link.get("href"))
-        return json_data
+        return stac_data
 
-    def add_missing_links(self, json_data: dict, new_root: str, new_self: str) -> dict:
+    def add_missing_links(self, stac_data: dict, new_root: str, new_self: str) -> dict:
         """As per STAC best practices, ensure root and self links exist."""
 
-        self.add_link_if_missing(json_data, "root", new_root)
-        self.add_link_if_missing(json_data, "self", new_self)
+        self.add_link_if_missing(stac_data, "root", new_root)
+        self.add_link_if_missing(stac_data, "self", new_self)
 
-        return json_data
+        return stac_data
 
-    def add_link_if_missing(self, json_data: dict, rel: str, href: str):
+    def add_link_if_missing(self, stac_data: dict, rel: str, href: str):
         """Ensures a link consisting of given rel exists in links."""
-        links = json_data.get("links")
+        links = stac_data.get("links")
         link_exists = False
         if not links:
-            json_data.update({"links": [{"rel": rel, "href": href}]})
+            stac_data.update({"links": [{"rel": rel, "href": href}]})
             return
         for link in links:
             if link.get("rel") == rel:
@@ -106,33 +109,40 @@ class LinkProcessor:
         if not link_exists:
             links.append({"rel": rel, "href": href})
 
-    def add_license_link(self, json_data: dict, rel: str, href: str):
+    def add_license_link(self, stac_data: dict, href: str):
         """Ensures unique license links, overwriting if already present."""
-        links = json_data.get("links", [])
+        links = stac_data.setdefault("links", [])
         link_type = "text/plain" if href.endswith(".txt") else "text/html"
-        links.append({"rel": rel, "href": href, "type": link_type})
-        json_data["links"] = links
+        links.append({"rel": "license", "href": href, "type": link_type})
 
-    def ensure_license_links(self, json_data: dict):
+    def ensure_license_links(self, stac_data: dict):
         """Ensure that valid SPDX license links are present."""
-        links = json_data.get("links", [])
+        links = stac_data.get("links", [])
+        # Check whether license field is provided
+        license_field = stac_data.get("license")
+        if not license_field:
+            return
         # If a license link already exists, do not add new ones
         for link in links:
             if link.get("rel") == "license":
                 return
-        license_field = json_data.get("license")
-
-        if not license_field or license_field not in self.SPDX_LICENSE_LIST:
+        license_field_case_insensitive = license_field.upper()
+        # Check whether license field is a valid SPDX ID
+        found_license = ""
+        for license_id in self.spdx_license_list:
+            if license_id.upper() == license_field_case_insensitive:
+                found_license = license_id
+                break
+        if not found_license:
             return
 
-        spdx_license_path = self.SPDX_LICENSE_PATH
-        base_url = f"https://{self.HOSTED_ZONE}/{spdx_license_path}"
+        base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
 
-        text_url = urljoin(base_url + "/text/", f"{license_field}.txt")
-        html_url = urljoin(base_url + "/html/", f"{license_field}.html")
+        text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
+        html_url = urljoin(base_url + "/html/", f"{found_license}.html")
 
-        self.add_license_link(json_data, "license", text_url)
-        self.add_license_link(json_data, "license", html_url)
+        self.add_license_link(stac_data, text_url)
+        self.add_license_link(stac_data, html_url)
 
     def update_file(
         self,
