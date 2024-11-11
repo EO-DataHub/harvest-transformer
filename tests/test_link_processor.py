@@ -1,7 +1,9 @@
 import copy
 import json
 import os
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+import pytest
 
 from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
@@ -19,10 +21,22 @@ with patch(
     PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_links_replacement_only(mock_list_s3_license_files):
+# Define the fixture
+@pytest.fixture
+def link_processor_fixture(mocker):
+    with patch(
+        "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files", new_callable=Mock
+    ) as mock_list_s3_license_files:
+        mock_list_s3_license_files.return_value = ["AAL"]
+        mocker.patch.dict(
+            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
+        )
+        processor = LinkProcessor()
+        yield processor
+
+
+def test_links_replacement_only(link_processor_fixture):
     # Configure mocks
-    mock_list_s3_license_files.return_value = []
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
@@ -81,10 +95,8 @@ def test_links_replacement_only(mock_list_s3_license_files):
     assert output_json["links"] == expected_links
 
 
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_links_add_missing_links(mock_list_s3_license_files):
+def test_links_add_missing_links(link_processor_fixture):
     # Configure mocks
-    mock_list_s3_license_files.return_value = []
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
@@ -176,19 +188,10 @@ def test_workflow_does_not_alter_non_workflows():
     assert output_json["links"] == expected_links
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_add_new_license_link(mock_list_s3_license_files):
+def test_add_new_license_link(link_processor_fixture):
     json_data = {"links": []}
     processor = LinkProcessor()
     processor.spdx_license_list = ["APL-1.0"]
-    mock_list_s3_license_files.return_value = None
     processor.add_license_link(
         json_data,
         "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
@@ -202,18 +205,9 @@ def test_add_new_license_link(mock_list_s3_license_files):
     ]
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_add_new_license_link_from_id(mock_list_s3_license_files):
+def test_add_new_license_link_from_id(link_processor_fixture):
     processor = LinkProcessor()
     processor.spdx_license_list = ["AAL"]
-    mock_list_s3_license_files.return_value = None
     json_data = {"links": [], "license": "aal"}
     processor.ensure_license_links(json_data)
     assert json_data["links"] == [
@@ -230,18 +224,9 @@ def test_add_new_license_link_from_id(mock_list_s3_license_files):
     ]
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_dont_add_license_link_when_present(mock_list_s3_license_files):
+def test_dont_add_license_link_when_present(link_processor_fixture):
     processor = LinkProcessor()
     processor.spdx_license_list = ["AAL"]
-    mock_list_s3_license_files.return_value = None
     json_data = {
         "links": [
             {
@@ -261,18 +246,9 @@ def test_dont_add_license_link_when_present(mock_list_s3_license_files):
     }
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_add_multiple_license_links(mock_list_s3_license_files):
+def test_add_multiple_license_links(link_processor_fixture):
     processor = LinkProcessor()
     processor.spdx_license_list = ["AAL", "APSL-1.2"]
-    mock_list_s3_license_files.return_value = None
     json_data = {
         "links": [
             {
@@ -300,18 +276,9 @@ def test_add_multiple_license_links(mock_list_s3_license_files):
     ]
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_add_license_link_to_existing_links(mock_list_s3_license_files):
+def test_add_license_link_to_existing_links(link_processor_fixture):
     processor = LinkProcessor()
     processor.spdx_license_list = ["AAL"]
-    mock_list_s3_license_files.return_value = None
     json_data = {
         "license": "AAL",
         "links": [
@@ -336,17 +303,8 @@ def test_add_license_link_to_existing_links(mock_list_s3_license_files):
     ]
 
 
-@patch.dict(
-    os.environ,
-    {
-        "HOSTED_ZONE": "test-url.org.uk",
-        "S3_BUCKET": "SPDX_BUCKET",
-    },
-)
-@patch("harvest_transformer.link_processor.LinkProcessor.list_s3_license_files")
-def test_add_license_link_unknown_license_id(mock_list_s3_license_files):
+def test_add_license_link_unknown_license_id(link_processor_fixture):
     processor = LinkProcessor()
-    mock_list_s3_license_files.return_value = ["AAL"]
     json_data = {
         "license": "proprietary",
         "links": [
