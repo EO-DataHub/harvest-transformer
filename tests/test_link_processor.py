@@ -17,7 +17,7 @@ OUTPUT_ROOT = "https://output.root.test"
 with patch(
     "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files"
 ) as mock_list_s3_license_files:
-    mock_list_s3_license_files.return_value = []
+    mock_list_s3_license_files.return_value = {}
     PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
@@ -27,7 +27,7 @@ def link_processor_fixture(mocker):
     with patch(
         "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files", new_callable=Mock
     ) as mock_list_s3_license_files:
-        mock_list_s3_license_files.return_value = ["AAL"]
+        mock_list_s3_license_files.return_value = {"aal": "AAL"}
         mocker.patch.dict(
             os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
         )
@@ -191,7 +191,7 @@ def test_workflow_does_not_alter_non_workflows():
 def test_add_new_license_link(link_processor_fixture):
     json_data = {"links": []}
     processor = LinkProcessor()
-    processor.spdx_license_list = ["APL-1.0"]
+    processor.spdx_license_list = {"apl-1.0": "APL-1.0"}
     processor.add_license_link(
         json_data,
         "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
@@ -207,8 +207,8 @@ def test_add_new_license_link(link_processor_fixture):
 
 def test_add_new_license_link_from_id(link_processor_fixture):
     processor = LinkProcessor()
-    processor.spdx_license_list = ["AAL"]
-    json_data = {"links": [], "license": "aal"}
+    processor.spdx_license_list = {"aal": "AAL"}
+    json_data = {"links": [], "license": "AAL"}
     processor.ensure_license_links(json_data)
     assert json_data["links"] == [
         {
@@ -226,7 +226,7 @@ def test_add_new_license_link_from_id(link_processor_fixture):
 
 def test_dont_add_license_link_when_present(link_processor_fixture):
     processor = LinkProcessor()
-    processor.spdx_license_list = ["AAL"]
+    processor.spdx_license_list = {"aal": "AAL"}
     json_data = {
         "links": [
             {
@@ -248,7 +248,7 @@ def test_dont_add_license_link_when_present(link_processor_fixture):
 
 def test_add_multiple_license_links(link_processor_fixture):
     processor = LinkProcessor()
-    processor.spdx_license_list = ["AAL", "APSL-1.2"]
+    processor.spdx_license_list = {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
     json_data = {
         "links": [
             {
@@ -278,9 +278,9 @@ def test_add_multiple_license_links(link_processor_fixture):
 
 def test_add_license_link_to_existing_links(link_processor_fixture):
     processor = LinkProcessor()
-    processor.spdx_license_list = ["AAL"]
+    processor.spdx_license_list = {"aal": "AAL"}
     json_data = {
-        "license": "AAL",
+        "license": "aal",
         "links": [
             {"rel": "self", "href": "https://example.com/self"},
             {"rel": "parent", "href": "https://example.com/parent"},

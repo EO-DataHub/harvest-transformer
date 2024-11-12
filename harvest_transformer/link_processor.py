@@ -20,25 +20,27 @@ class LinkProcessor:
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_BUCKET")
-        self.spdx_license_list = self.list_s3_license_files(
+        self.spdx_license_dict = self.list_s3_license_files(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
 
-    def list_s3_license_files(self, bucket_name, prefix):
+    def list_s3_license_files(self, bucket_name, prefix) -> dict:
         # Initialize an S3 client
         s3 = boto3.client("s3")
         logging.info(f"Bucket name {bucket_name} and prefix {prefix}")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
 
+        files_dict = {}
+
         # Extract file names without the extension
         if "Contents" in response:
-            files = [
-                obj["Key"].split("/")[-1].rsplit(".", 1)[0]
-                for obj in response["Contents"]
-                if obj["Key"].endswith(".html")
-            ]
-            return files
+            for obj in response["Contents"]:
+                if obj["Key"].endswith(".html"):
+                    file_basename = os.path.basename(obj["Key"]).rsplit(".", 1)[0]
+                    files_dict.update({file_basename.casefold(): file_basename})
+
+            return files_dict
         else:
             raise SPDXLicenseError(
                 f"No html license files found in {bucket_name} with prefix {prefix}"
@@ -126,13 +128,8 @@ class LinkProcessor:
         for link in links:
             if link.get("rel") == "license":
                 return
-        license_field_case_insensitive = license_field.upper()
         # Check whether license field is a valid SPDX ID
-        found_license = ""
-        for license_id in self.spdx_license_list:
-            if license_id.upper() == license_field_case_insensitive:
-                found_license = license_id
-                break
+        found_license = self.spdx_license_dict.get(license_field.casefold())
         if not found_license:
             return
 

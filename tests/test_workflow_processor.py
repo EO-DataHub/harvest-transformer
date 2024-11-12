@@ -15,7 +15,7 @@ OUTPUT_ROOT = "https://output.root.test"
 with patch(
     "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files"
 ) as mock_list_s3_license_files:
-    mock_list_s3_license_files.return_value = []
+    mock_list_s3_license_files.return_value = {}
     PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
