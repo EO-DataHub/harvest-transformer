@@ -13,9 +13,9 @@ OUTPUT_ROOT = "https://output.root.test"
 
 # Ensure you update this list when other transformers are added
 with patch(
-    "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files"
-) as mock_list_s3_license_files:
-    mock_list_s3_license_files.return_value = {}
+    "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
+) as mock_map_licence_codes_to_filenames:
+    mock_map_licence_codes_to_filenames.return_value = {}
     PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 

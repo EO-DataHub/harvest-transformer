@@ -20,11 +20,11 @@ class LinkProcessor:
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_BUCKET")
-        self.spdx_license_dict = self.list_s3_license_files(
+        self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
 
-    def list_s3_license_files(self, bucket_name, prefix) -> dict:
+    def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
         # Initialize an S3 client
         s3 = boto3.client("s3")
         logging.info(f"Bucket name {bucket_name} and prefix {prefix}")

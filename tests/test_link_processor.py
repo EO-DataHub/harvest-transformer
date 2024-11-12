@@ -15,9 +15,9 @@ OUTPUT_ROOT = "https://output.root.test"
 
 # Ensure you update this list when other transformers are added
 with patch(
-    "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files"
-) as mock_list_s3_license_files:
-    mock_list_s3_license_files.return_value = {}
+    "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
+) as mock_map_licence_codes_to_filenames:
+    mock_map_licence_codes_to_filenames.return_value = {}
     PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
@@ -25,9 +25,10 @@ with patch(
 @pytest.fixture
 def link_processor_fixture(mocker):
     with patch(
-        "harvest_transformer.link_processor.LinkProcessor.list_s3_license_files", new_callable=Mock
-    ) as mock_list_s3_license_files:
-        mock_list_s3_license_files.return_value = {"aal": "AAL"}
+        "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames",
+        new_callable=Mock,
+    ) as mock_map_licence_codes_to_filenames:
+        mock_map_licence_codes_to_filenames.return_value = {"aal": "AAL"}
         mocker.patch.dict(
             os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
         )
