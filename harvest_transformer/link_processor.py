@@ -77,21 +77,56 @@ class LinkProcessor:
         self, stac_data: dict, source: str, target_location: str, output_self: str, output_root: str
     ) -> dict:
         """Rewrite links so that they are suitable for an EODHP catalogue"""
-        for link in self.find_all_links(stac_data):
-            if not link.get("href").startswith(output_root):
-                if link.get("href").startswith(source):
+        relations_to_rewrite = ["child", "collection", "item", "items", "parent", "root", "self"]
+        # Remove relations that refer to api describing the original catalogue
+        relations_to_remove = [
+            "aggregate",
+            "aggregations",
+            "queryables",
+            "http:/www.opengis.net/def/rel/ogc/1.0/queryables",
+            "search",
+            "service-desc",
+            "service-doc",
+        ]
+
+        new_links = []
+
+        for link in self.find_all_links(json_data):
+            href = link.get("href")
+            rel = link.get("rel")
+
+            if href.startswith(output_root):
+                # Link is already EODH link
+                new_links.append(link)
+                continue
+
+            parsed_href = urlparse(href)
+
+            if rel in relations_to_rewrite:
+                if href.startswith(source):
                     # Link is an absolute link. Replace the source.
-                    link["href"] = link["href"].replace(source, target_location)
-                elif link.get("rel") == "parent":
+                    link["href"] = href.replace(source, target_location)
+                elif rel == "parent":
+                    # Link is a parent link. Path to parent via self link.
                     link["href"] = output_self.rsplit("/", 2)[0]
-                elif link.get("href").startswith("http"):
-                    # Link is an absolute link with a different root than expected.
-                    # Assume valid link outside of EODH
+                elif href.startswith(output_root.strip("/")):
+                    # Link is an EODH link. Do nothing.
                     pass
-                else:
+                elif not parsed_href.scheme and not parsed_href.netloc:
                     # Link is a relative link. Convert to absolute link.
-                    link["href"] = urljoin(output_self.rsplit("/", 1)[0], link.get("href"))
-        return stac_data
+                    link["href"] = urljoin(output_self, href)
+                else:
+                    # Link cannot be rewritten and should not be external. Drop it.
+                    continue
+            elif rel in relations_to_remove:
+                # Drop links that we know are not relevant to the EODH harvested catalogue
+                continue
+
+            # Keep links by default
+            new_links.append(link)
+
+        json_data["links"] = new_links
+        return json_data
 
     def add_missing_links(self, stac_data: dict, new_root: str, new_self: str) -> dict:
         """As per STAC best practices, ensure root and self links exist."""
@@ -177,7 +212,7 @@ class LinkProcessor:
                 link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
             ][0]
 
-        output_self = self_link.replace(source, target_location)
+        output_self = self_link.replace(source, target_location, 1)
         if not self.is_valid_url(output_self):
             logging.error(
                 f"File {file_name} does not produce a valid self link with given "

@@ -131,6 +131,72 @@ def test_links_add_missing_links(link_processor_fixture):
     assert output_json["links"] == expected_links
 
 
+def test_links_remove_unkown_links():
+    """Test that unkown hrefs are removed, catalog hrefs are updated, and external links are unchanged"""
+    link_processor = [LinkProcessor()]
+    stac_location = "test_data/test_links_remove_unknown_links.json"
+    # Load test STAC data
+    with open(stac_location, "r") as file:
+        json_data = json.load(file)
+        input_data = copy.deepcopy(json_data)
+
+    # Execute update file process
+    output = update_file(
+        file_name=stac_location,
+        source=SOURCE_PATH,
+        target_location=OUTPUT_ROOT + TARGET,
+        file_body=json_data,
+        output_root=OUTPUT_ROOT,
+        processors=link_processor,
+    )
+
+    # Read output in as a dictionary
+    output_json = json.loads(output)
+
+    # Construct expected output links
+    for link in input_data["links"]:
+        if link["rel"] == "self":
+            expect_self_link = link
+            expect_self_link.update(
+                {
+                    "href": "https://output.root.test/target_directory/collections/example_collection/items/example_stac_feature"
+                }
+            )
+        elif link["rel"] == "root":
+            expect_root_link = link
+            expect_root_link.update({"href": "https://output.root.test/target_directory/"})
+        elif link["rel"] == "parent":
+            expect_parent_link = link
+            expect_parent_link.update(
+                {"href": "https://output.root.test/target_directory/collections/example_collection"}
+            )
+        elif link["rel"] == "collection":
+            expect_collection_link = link
+            expect_collection_link.update(
+                {"href": "https://output.root.test/target_directory/collections/example_collection"}
+            )
+        elif link["rel"] == "thumbnail":
+            expect_thumbnail_link = link
+        elif link["rel"] == "license":
+            expect_license_link = link
+
+    expected_links = [
+        expect_self_link,
+        expect_root_link,
+        expect_parent_link,
+        expect_collection_link,
+        expect_thumbnail_link,
+        expect_license_link,
+    ]
+
+    # Check other data is unchanged
+    for key in output_json:
+        if not key == "links":
+            assert output_json[key] == input_data[key]
+
+    assert output_json["links"] == expected_links
+
+
 def test_workflow_does_not_alter_non_workflows():
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
