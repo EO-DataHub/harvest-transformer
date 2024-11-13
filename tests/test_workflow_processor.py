@@ -1,5 +1,6 @@
 import copy
 import json
+from unittest.mock import patch
 from uuid import UUID
 
 from harvest_transformer.__main__ import update_file
@@ -11,7 +12,11 @@ TARGET = "/target_directory/"
 OUTPUT_ROOT = "https://output.root.test"
 
 # Ensure you update this list when other transformers are added
-PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
+with patch(
+    "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
+) as mock_map_licence_codes_to_filenames:
+    mock_map_licence_codes_to_filenames.return_value = {}
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
 def test_workflows_with_only_cwl_input_valid():

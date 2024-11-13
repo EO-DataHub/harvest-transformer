@@ -7,6 +7,10 @@ class URLAccessError(Exception):
     pass
 
 
+class SPDXLicenseError(Exception):
+    pass
+
+
 def get_file_from_url(url: str, retries: int = 0) -> str:
     """Returns contents of data available at given URL"""
     if retries == 3:

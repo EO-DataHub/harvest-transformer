@@ -1,5 +1,9 @@
 import copy
 import json
+import os
+from unittest.mock import Mock, patch
+
+import pytest
 
 from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
@@ -10,10 +14,30 @@ TARGET = "/target_directory/"
 OUTPUT_ROOT = "https://output.root.test"
 
 # Ensure you update this list when other transformers are added
-PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
+with patch(
+    "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
+) as mock_map_licence_codes_to_filenames:
+    mock_map_licence_codes_to_filenames.return_value = {}
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
-def test_links_replacement_only():
+# Define the fixture
+@pytest.fixture
+def link_processor_fixture(mocker):
+    with patch(
+        "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames",
+        new_callable=Mock,
+    ) as mock_map_licence_codes_to_filenames:
+        mock_map_licence_codes_to_filenames.return_value = {"aal": "AAL"}
+        mocker.patch.dict(
+            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
+        )
+        processor = LinkProcessor()
+        yield processor
+
+
+def test_links_replacement_only(link_processor_fixture):
+    # Configure mocks
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
@@ -72,7 +96,8 @@ def test_links_replacement_only():
     assert output_json["links"] == expected_links
 
 
-def test_links_add_missing_links():
+def test_links_add_missing_links(link_processor_fixture):
+    # Configure mocks
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
@@ -106,7 +131,7 @@ def test_links_add_missing_links():
     assert output_json["links"] == expected_links
 
 
-def test_links_remove_unkown_links():
+def test_links_remove_unkown_links(link_processor_fixture):
     """Test that unkown hrefs are removed, catalog hrefs are updated, and external links are unchanged"""
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_remove_unknown_links.json"
@@ -228,3 +253,152 @@ def test_workflow_does_not_alter_non_workflows():
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
+
+
+def test_add_new_license_link(link_processor_fixture):
+    json_data = {"links": []}
+    processor = LinkProcessor()
+    processor.spdx_license_list = {"apl-1.0": "APL-1.0"}
+    processor.add_license_link(
+        json_data,
+        "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+    )
+    assert json_data["links"] == [
+        {
+            "rel": "license",
+            "type": "text/plain",
+            "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        }
+    ]
+
+
+def test_add_new_license_link_from_id(link_processor_fixture):
+    processor = LinkProcessor()
+    processor.spdx_license_list = {"aal": "AAL"}
+    json_data = {"links": [], "license": "AAL"}
+    processor.ensure_license_links(json_data)
+    assert json_data["links"] == [
+        {
+            "rel": "license",
+            "type": "text/plain",
+            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+        },
+        {
+            "rel": "license",
+            "type": "text/html",
+            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+        },
+    ]
+
+
+def test_dont_add_license_link_when_present(link_processor_fixture):
+    processor = LinkProcessor()
+    processor.spdx_license_list = {"aal": "AAL"}
+    json_data = {
+        "links": [
+            {
+                "rel": "license",
+                "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+            }
+        ]
+    }
+    processor.ensure_license_links(json_data)
+    assert json_data == {
+        "links": [
+            {
+                "rel": "license",
+                "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+            }
+        ]
+    }
+
+
+def test_add_multiple_license_links(link_processor_fixture):
+    processor = LinkProcessor()
+    processor.spdx_license_list = {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
+    json_data = {
+        "links": [
+            {
+                "rel": "license",
+                "type": "text/plain",
+                "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+            }
+        ]
+    }
+    processor.add_license_link(
+        json_data,
+        "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/html/APSL-1.2.html",
+    )
+    assert json_data["links"] == [
+        {
+            "rel": "license",
+            "type": "text/plain",
+            "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
+        },
+        {
+            "rel": "license",
+            "type": "text/html",
+            "href": "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/html/APSL-1.2.html",
+        },
+    ]
+
+
+def test_add_license_link_to_existing_links(link_processor_fixture):
+    processor = LinkProcessor()
+    processor.spdx_license_list = {"aal": "AAL"}
+    json_data = {
+        "license": "aal",
+        "links": [
+            {"rel": "self", "href": "https://example.com/self"},
+            {"rel": "parent", "href": "https://example.com/parent"},
+        ],
+    }
+    processor.ensure_license_links(json_data)
+    assert json_data["links"] == [
+        {"rel": "self", "href": "https://example.com/self"},
+        {"rel": "parent", "href": "https://example.com/parent"},
+        {
+            "rel": "license",
+            "type": "text/plain",
+            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+        },
+        {
+            "rel": "license",
+            "type": "text/html",
+            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+        },
+    ]
+
+
+def test_add_license_link_unknown_license_id(link_processor_fixture):
+    processor = LinkProcessor()
+    json_data = {
+        "license": "proprietary",
+        "links": [
+            {"rel": "self", "href": "https://example.com/self"},
+            {"rel": "parent", "href": "https://example.com/parent"},
+        ],
+    }
+    processor.ensure_license_links(
+        json_data,
+    )
+    assert json_data["links"] == [
+        {"rel": "self", "href": "https://example.com/self"},
+        {"rel": "parent", "href": "https://example.com/parent"},
+    ]
+
+
+@patch("boto3.client")
+def test_map_licence_codes_to_filenames(mock_boto3_client):
+    # Configure mocks
+    mock_s3_client = Mock()
+    mock_s3_client.list_objects_v2.return_value = {
+        "Contents": [
+            {"Key": "prefix/key/to/file/AAL.html"},
+            {"Key": "prefix/key/to/file/APSL-1.2.html"},
+        ]
+    }
+    mock_boto3_client.return_value = mock_s3_client
+    processor = LinkProcessor()
+    result = processor.map_licence_codes_to_filenames("SPDX_BUCKET", "prefix")
+    assert result == {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
