@@ -131,7 +131,7 @@ def test_links_add_missing_links(link_processor_fixture):
     assert output_json["links"] == expected_links
 
 
-def test_links_remove_unkown_links():
+def test_links_remove_unkown_links(link_processor_fixture):
     """Test that unkown hrefs are removed, catalog hrefs are updated, and external links are unchanged"""
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_remove_unknown_links.json"

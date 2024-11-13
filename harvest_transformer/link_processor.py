@@ -91,7 +91,7 @@ class LinkProcessor:
 
         new_links = []
 
-        for link in self.find_all_links(json_data):
+        for link in self.find_all_links(stac_data):
             href = link.get("href")
             rel = link.get("rel")
 
@@ -125,8 +125,8 @@ class LinkProcessor:
             # Keep links by default
             new_links.append(link)
 
-        json_data["links"] = new_links
-        return json_data
+        stac_data["links"] = new_links
+        return stac_data
 
     def add_missing_links(self, stac_data: dict, new_root: str, new_self: str) -> dict:
         """As per STAC best practices, ensure root and self links exist."""
