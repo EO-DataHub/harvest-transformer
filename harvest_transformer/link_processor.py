@@ -31,16 +31,19 @@ class LinkProcessor:
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
 
-        files_dict = {}
+        files = {
+            obj["Key"]
+            .split("/")[-1]
+            .rsplit(".", 1)[0]
+            .casefold(): obj["Key"]
+            .split("/")[-1]
+            .rsplit(".", 1)[0]
+            for obj in response.get("Contents", [])
+            if obj.get("Key", "").endswith(".html")
+        }
 
-        # Extract file names without the extension
-        if "Contents" in response:
-            for obj in response["Contents"]:
-                if obj["Key"].endswith(".html"):
-                    file_basename = os.path.basename(obj["Key"]).rsplit(".", 1)[0]
-                    files_dict.update({file_basename.casefold(): file_basename})
-
-            return files_dict
+        if files:
+            return files
         else:
             raise SPDXLicenseError(
                 f"No html license files found in {bucket_name} with prefix {prefix}"

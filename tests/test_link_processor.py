@@ -320,3 +320,19 @@ def test_add_license_link_unknown_license_id(link_processor_fixture):
         {"rel": "self", "href": "https://example.com/self"},
         {"rel": "parent", "href": "https://example.com/parent"},
     ]
+
+
+@patch("boto3.client")
+def test_map_licence_codes_to_filenames(mock_boto3_client):
+    # Configure mocks
+    mock_s3_client = Mock()
+    mock_s3_client.list_objects_v2.return_value = {
+        "Contents": [
+            {"Key": "prefix/key/to/file/AAL.html"},
+            {"Key": "prefix/key/to/file/APSL-1.2.html"},
+        ]
+    }
+    mock_boto3_client.return_value = mock_s3_client
+    processor = LinkProcessor()
+    result = processor.map_licence_codes_to_filenames("SPDX_BUCKET", "prefix")
+    assert result == {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
