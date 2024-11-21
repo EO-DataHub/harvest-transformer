@@ -16,7 +16,8 @@ with patch(
     "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
 ) as mock_map_licence_codes_to_filenames:
     mock_map_licence_codes_to_filenames.return_value = {}
-    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
+    workspace = "mock_workspace"
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor("workspace")]
 
 
 def test_workflows_with_only_cwl_input_valid():

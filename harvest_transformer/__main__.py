@@ -214,10 +214,10 @@ def process_pulsar_message(msg: Message, output_root: str):
     """
     harvest_schema = generate_harvest_schema()
     data_dict = get_message_data(msg, harvest_schema)
-
     bucket_name = data_dict.get("bucket_name")
     source = data_dict.get("source")
     target = data_dict.get("target")
+    workspace = data_dict.get("workspace")
 
     output_data = copy.deepcopy(data_dict)
     output_data["added_keys"] = []
@@ -236,7 +236,7 @@ def process_pulsar_message(msg: Message, output_root: str):
         },
     }
     error_data = copy.deepcopy(output_data)
-    processors = [WorkflowProcessor(), LinkProcessor(), RenderProcessor()]
+    processors = [WorkflowProcessor(), LinkProcessor(workspace), RenderProcessor()]
 
     for key in data_dict.get("added_keys"):
         try:
