@@ -15,7 +15,7 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    spdx_license_path = "harvested/default/spdx/license-list-data/main/"
+    spdx_license_path = "api/catalogue/licences/spdx/"
     spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
     def __init__(self, workspace: str):
@@ -26,6 +26,8 @@ class LinkProcessor:
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
+        # Initialize S3 client
+        self.s3_client = boto3.client("s3")
         self.sanitizer = Sanitizer()
 
     def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
@@ -167,27 +169,25 @@ class LinkProcessor:
         license_field = stac_data.get("license")
         if not license_field:
             return
-        # If a license link already exists, do not add new ones
-        for link in links:
-            if link.get("rel") == "license":
-                href = link.get("href")
-                if not href.startswith(f"https://{self.hosted_zone}"):
-                    # Copy the license file to EODH public bucket and update the link
-                    new_href = self.copy_license_to_eodh(href)
-                    link["href"] = new_href
-                return
         # Check whether license field is a valid SPDX ID
         found_license = self.spdx_license_dict.get(license_field.casefold())
-        if not found_license:
-            return
+        if found_license:
+            base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
 
-        base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
+            text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
+            html_url = urljoin(base_url + "/html/", f"{found_license}.html")
 
-        text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
-        html_url = urljoin(base_url + "/html/", f"{found_license}.html")
-
-        self.add_license_link(stac_data, text_url)
-        self.add_license_link(stac_data, html_url)
+            self.add_license_link(stac_data, text_url)
+            self.add_license_link(stac_data, html_url)
+        else:
+            # If a license link already exists, do not add new ones
+            for link in links:
+                if link.get("rel") == "license":
+                    href = link.get("href")
+                    if not href.startswith(f"https://{self.hosted_zone}"):
+                        # Copy the license file to EODH public bucket and update the link
+                        new_href = self.copy_license_to_eodh(href)
+                        link["href"] = new_href
 
     def update_file(
         self,
@@ -248,7 +248,6 @@ class LinkProcessor:
         # Download the license file
         response = requests.get(href)
         response.raise_for_status()
-
         # Sanitize HTML if necessary
         content_type = response.headers.get("Content-Type", "")
         content = response.content
@@ -259,25 +258,21 @@ class LinkProcessor:
         filename = href.split("/")[-1]
         new_path = f"api/catalogue/licences/{self.workspace}/{filename}"
 
-        # Initialize S3 client
-        s3 = boto3.client("s3")
-
         # Check if the file already exists in the bucket
         try:
-            s3.head_object(Bucket=self.spdx_bucket_name, Key=new_path)
+            self.s3_client.head_object(Bucket=self.spdx_bucket_name, Key=new_path)
             # If the file exists, return the existing URL
             return f"https://{self.hosted_zone}/{new_path}"
-        except s3.exceptions.ClientError as e:
+        except self.s3_client.exceptions.ClientError as e:
             if e.response["Error"]["Code"] != "404":
                 raise
 
         # Upload the file to the EODH public bucket
-        s3.put_object(
+        self.s3_client.put_object(
             Bucket=self.spdx_bucket_name,
             Key=new_path,
             Body=content,
             ContentType=content_type,
         )
-
         # Return the new URL
         return f"https://{self.hosted_zone}/{new_path}"

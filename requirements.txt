@@ -6,6 +6,8 @@
 #
 attrs==24.2.0
     # via jsonschema
+beautifulsoup4==4.12.3
+    # via html-sanitizer
 boto3==1.35.36
     # via Harvest-Transformer (pyproject.toml)
 botocore==1.35.36
@@ -14,9 +16,17 @@ botocore==1.35.36
     #   boto3
     #   s3transfer
 certifi==2024.8.30
-    # via pulsar-client
+    # via
+    #   pulsar-client
+    #   requests
+charset-normalizer==3.4.0
+    # via requests
 eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.0
     # via Harvest-Transformer (pyproject.toml)
+html-sanitizer==2.4.4
+    # via Harvest-Transformer (pyproject.toml)
+idna==3.10
+    # via requests
 jmespath==1.0.1
     # via
     #   boto3
@@ -25,6 +35,12 @@ jsonschema==3.2.0
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
+lxml==5.3.0
+    # via
+    #   html-sanitizer
+    #   lxml-html-clean
+lxml-html-clean==0.4.1
+    # via html-sanitizer
 pulsar-client==3.5.0
     # via Harvest-Transformer (pyproject.toml)
 pyrsistent==0.20.0
@@ -33,17 +49,20 @@ python-dateutil==2.9.0.post0
     # via botocore
 pyyaml==6.0.2
     # via Harvest-Transformer (pyproject.toml)
+requests==2.32.3
+    # via Harvest-Transformer (pyproject.toml)
 s3transfer==0.10.3
     # via boto3
 six==1.16.0
     # via
     #   jsonschema
     #   python-dateutil
+soupsieve==2.6
+    # via beautifulsoup4
 urllib3==2.2.3
-    # via botocore
-html-sanitizer==2.4.4
-    # via pip-tools
-requests==2.32.3
-    # via pip-tools
+    # via
+    #   botocore
+    #   requests
+
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

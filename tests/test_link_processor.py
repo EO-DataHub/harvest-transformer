@@ -281,19 +281,19 @@ def test_add_new_license_link(link_processor_fixture):
 def test_add_new_license_link_from_id(link_processor_fixture):
     workspace = "mock_workspace"
     processor = LinkProcessor(workspace)
-    processor.spdx_license_list = {"aal": "AAL"}
+    processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {"links": [], "license": "AAL"}
     processor.ensure_license_links(json_data)
     assert json_data["links"] == [
         {
             "rel": "license",
             "type": "text/plain",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/text/AAL.txt",
         },
         {
             "rel": "license",
             "type": "text/html",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/html/AAL.html",
         },
     ]
 
@@ -355,7 +355,7 @@ def test_add_multiple_license_links(link_processor_fixture):
 def test_add_license_link_to_existing_links(link_processor_fixture):
     workspace = "mock_workspace"
     processor = LinkProcessor(workspace)
-    processor.spdx_license_list = {"aal": "AAL"}
+    processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {
         "license": "aal",
         "links": [
@@ -370,12 +370,12 @@ def test_add_license_link_to_existing_links(link_processor_fixture):
         {
             "rel": "license",
             "type": "text/plain",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/text/AAL.txt",
         },
         {
             "rel": "license",
             "type": "text/html",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/html/AAL.html",
         },
     ]
 
