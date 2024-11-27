@@ -4,6 +4,8 @@ from typing import Union
 from urllib.parse import urljoin, urlparse
 
 import boto3
+import requests
+from html_sanitizer import Sanitizer
 
 from .utils import SPDXLicenseError
 from .workflow_processor import WorkflowProcessor
@@ -13,16 +15,20 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    spdx_license_path = "harvested/default/spdx/license-list-data/main/"
+    spdx_license_path = "api/catalogue/licences/spdx/"
     spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
-    def __init__(self):
+    def __init__(self, workspace: str):
+        self.workspace = workspace
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_BUCKET")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
+        # Initialize S3 client
+        self.s3_client = boto3.client("s3")
+        self.sanitizer = Sanitizer()
 
     def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
         # Initialize an S3 client
@@ -45,6 +51,7 @@ class LinkProcessor:
         if files:
             return files
         else:
+            logging.info(f"No html license files found in {bucket_name} with prefix {prefix}")
             raise SPDXLicenseError(
                 f"No html license files found in {bucket_name} with prefix {prefix}"
             )
@@ -162,22 +169,27 @@ class LinkProcessor:
         license_field = stac_data.get("license")
         if not license_field:
             return
-        # If a license link already exists, do not add new ones
-        for link in links:
-            if link.get("rel") == "license":
-                return
         # Check whether license field is a valid SPDX ID
         found_license = self.spdx_license_dict.get(license_field.casefold())
-        if not found_license:
-            return
+        if found_license:
+            base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
 
-        base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
-
-        text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
-        html_url = urljoin(base_url + "/html/", f"{found_license}.html")
-
-        self.add_license_link(stac_data, text_url)
-        self.add_license_link(stac_data, html_url)
+            text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
+            html_url = urljoin(base_url + "/html/", f"{found_license}.html")
+            # Check if the URLs are already present in the links
+            if not any(link.get("href") == text_url for link in links):
+                self.add_license_link(stac_data, text_url)
+            if not any(link.get("href") == html_url for link in links):
+                self.add_license_link(stac_data, html_url)
+        else:
+            # If a license link already exists, do not add new ones
+            for link in links:
+                if link.get("rel") == "license":
+                    href = link.get("href")
+                    if not href.startswith(f"https://{self.hosted_zone}"):
+                        # Copy the license file to EODH public bucket and update the link
+                        new_href = self.copy_license_to_eodh(href)
+                        link["href"] = new_href
 
     def update_file(
         self,
@@ -232,3 +244,37 @@ class LinkProcessor:
 
         # Return json for further transform and upload
         return file_body
+
+    def copy_license_to_eodh(self, href: str) -> str:
+        """Copy the license file to the EODH public bucket and return the new URL."""
+        # Download the license file
+        response = requests.get(href)
+        response.raise_for_status()
+        # Sanitize HTML if necessary
+        content_type = response.headers.get("Content-Type", "")
+        content = response.content
+        if "text/html" in content_type:
+            content = self.sanitizer.sanitize(response.text).encode("utf-8")
+
+        # Determine the new filename and path
+        filename = href.split("/")[-1]
+        new_path = f"api/catalogue/licences/{self.workspace}/{filename}"
+
+        # Check if the file already exists in the bucket
+        try:
+            self.s3_client.head_object(Bucket=self.spdx_bucket_name, Key=new_path)
+            # If the file exists, return the existing URL
+            return f"https://{self.hosted_zone}/{new_path}"
+        except self.s3_client.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] != "404":
+                raise
+
+        # Upload the file to the EODH public bucket
+        self.s3_client.put_object(
+            Bucket=self.spdx_bucket_name,
+            Key=new_path,
+            Body=content,
+            ContentType=content_type,
+        )
+        # Return the new URL
+        return f"https://{self.hosted_zone}/{new_path}"

@@ -18,7 +18,8 @@ with patch(
     "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
 ) as mock_map_licence_codes_to_filenames:
     mock_map_licence_codes_to_filenames.return_value = {}
-    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
+    worspace = "mock_workspace"
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor(worspace)]
 
 
 # Define the fixture
@@ -32,13 +33,15 @@ def link_processor_fixture(mocker):
         mocker.patch.dict(
             os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
         )
-        processor = LinkProcessor()
+        workspace = "mock_workspace"
+        processor = LinkProcessor(workspace)
         yield processor
 
 
 def test_links_replacement_only(link_processor_fixture):
     # Configure mocks
-    link_processor = [LinkProcessor()]
+    workspace = "mock_workspace"
+    link_processor = [LinkProcessor(workspace)]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -98,7 +101,8 @@ def test_links_replacement_only(link_processor_fixture):
 
 def test_links_add_missing_links(link_processor_fixture):
     # Configure mocks
-    link_processor = [LinkProcessor()]
+    workspace = "mock_workspace"
+    link_processor = [LinkProcessor(workspace)]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -133,7 +137,8 @@ def test_links_add_missing_links(link_processor_fixture):
 
 def test_links_remove_unkown_links(link_processor_fixture):
     """Test that unkown hrefs are removed, catalog hrefs are updated, and external links are unchanged"""
-    link_processor = [LinkProcessor()]
+    workspace = "mock_workspace"
+    link_processor = [LinkProcessor(workspace)]
     stac_location = "test_data/test_links_remove_unknown_links.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -257,7 +262,8 @@ def test_workflow_does_not_alter_non_workflows():
 
 def test_add_new_license_link(link_processor_fixture):
     json_data = {"links": []}
-    processor = LinkProcessor()
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
     processor.spdx_license_list = {"apl-1.0": "APL-1.0"}
     processor.add_license_link(
         json_data,
@@ -273,26 +279,28 @@ def test_add_new_license_link(link_processor_fixture):
 
 
 def test_add_new_license_link_from_id(link_processor_fixture):
-    processor = LinkProcessor()
-    processor.spdx_license_list = {"aal": "AAL"}
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
+    processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {"links": [], "license": "AAL"}
     processor.ensure_license_links(json_data)
     assert json_data["links"] == [
         {
             "rel": "license",
             "type": "text/plain",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/text/AAL.txt",
         },
         {
             "rel": "license",
             "type": "text/html",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/html/AAL.html",
         },
     ]
 
 
 def test_dont_add_license_link_when_present(link_processor_fixture):
-    processor = LinkProcessor()
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
     processor.spdx_license_list = {"aal": "AAL"}
     json_data = {
         "links": [
@@ -314,7 +322,8 @@ def test_dont_add_license_link_when_present(link_processor_fixture):
 
 
 def test_add_multiple_license_links(link_processor_fixture):
-    processor = LinkProcessor()
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
     processor.spdx_license_list = {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
     json_data = {
         "links": [
@@ -344,8 +353,9 @@ def test_add_multiple_license_links(link_processor_fixture):
 
 
 def test_add_license_link_to_existing_links(link_processor_fixture):
-    processor = LinkProcessor()
-    processor.spdx_license_list = {"aal": "AAL"}
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
+    processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {
         "license": "aal",
         "links": [
@@ -360,18 +370,19 @@ def test_add_license_link_to_existing_links(link_processor_fixture):
         {
             "rel": "license",
             "type": "text/plain",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/text/AAL.txt",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/text/AAL.txt",
         },
         {
             "rel": "license",
             "type": "text/html",
-            "href": "https://test-url.org.uk/harvested/default/spdx/license-list-data/main/html/AAL.html",
+            "href": "https://test-url.org.uk/api/catalogue/licences/spdx/html/AAL.html",
         },
     ]
 
 
 def test_add_license_link_unknown_license_id(link_processor_fixture):
-    processor = LinkProcessor()
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
     json_data = {
         "license": "proprietary",
         "links": [
@@ -399,6 +410,7 @@ def test_map_licence_codes_to_filenames(mock_boto3_client):
         ]
     }
     mock_boto3_client.return_value = mock_s3_client
-    processor = LinkProcessor()
+    workspace = "mock_workspace"
+    processor = LinkProcessor(workspace)
     result = processor.map_licence_codes_to_filenames("SPDX_BUCKET", "prefix")
     assert result == {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
