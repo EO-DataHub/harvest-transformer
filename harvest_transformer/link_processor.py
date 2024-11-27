@@ -176,9 +176,11 @@ class LinkProcessor:
 
             text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
             html_url = urljoin(base_url + "/html/", f"{found_license}.html")
-
-            self.add_license_link(stac_data, text_url)
-            self.add_license_link(stac_data, html_url)
+            # Check if the URLs are already present in the links
+            if not any(link.get("href") == text_url for link in links):
+                self.add_license_link(stac_data, text_url)
+            if not any(link.get("href") == html_url for link in links):
+                self.add_license_link(stac_data, html_url)
         else:
             # If a license link already exists, do not add new ones
             for link in links:
