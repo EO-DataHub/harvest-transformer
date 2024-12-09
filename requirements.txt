@@ -45,9 +45,7 @@ lxml==5.3.0
 lxml-html-clean==0.4.1
     # via html-sanitizer
 pulsar-client==3.5.0
-    # via
-    #   Harvest-Transformer (pyproject.toml)
-    #   eodhp-utils
+    # via eodhp-utils
 pyrsistent==0.20.0
     # via jsonschema
 python-dateutil==2.9.0.post0
