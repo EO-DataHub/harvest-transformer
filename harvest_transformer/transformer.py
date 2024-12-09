@@ -77,9 +77,7 @@ def get_new_catalog_id_from_target(target: str) -> str:
 def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
     transformed_key = file_name.replace("git-harvester/", "", 1)
-    print("checking")
     if transformed_key == file_name:
-        print("HERERE")
         transformed_key = file_name.replace(source, target, 1)
     transformed_key = reformat_key(transformed_key)
     return transformed_key

@@ -16,7 +16,6 @@ class TransformerMessager(CatalogueChangeBodyMessager):
     def process_update(
         self, input_bucket: str, input_key: str, cat_path: str, source: str, target: str
     ) -> Sequence[Messager.Action]:
-        print("here")
         get_result = self.s3_client.get_object(Bucket=input_bucket, Key=input_key)
         entry_body = get_result["Body"].read()
         # Transformer needs updating to ensure that content type is set to this
@@ -41,7 +40,6 @@ class TransformerMessager(CatalogueChangeBodyMessager):
             workspace=workspace_from_msg,
         )
         updated_key = transform_key(cat_path, source, target)
-        print("updated key is %s", updated_key)
         return [Messager.OutputFileAction(file_body=entry_body, cat_path=updated_key)]
 
     def process_delete(
