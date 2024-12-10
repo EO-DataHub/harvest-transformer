@@ -1,23 +1,15 @@
 import logging
 import os
 
-import boto3
 from eodhp_utils import run
-from pulsar import Client
+from eodhp_utils.runner import get_boto3_session, get_pulsar_client
 
 from .transformer_messager import TransformerMessager
 
 
 def main():
     # Configure S3 client
-    if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
-        session = boto3.session.Session(
-            aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
-            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        )
-        s3_client = session.client("s3")
-    else:
-        s3_client = boto3.client("s3")
+    s3_client = get_boto3_session().client("s3")
 
     if os.getenv("TOPIC"):
         identifier = "_" + os.getenv("TOPIC")
@@ -25,10 +17,9 @@ def main():
         identifier = ""
 
     # Initiate Pulsar
-    pulsar_url = os.environ.get("PULSAR_URL")
-    client = Client(pulsar_url)
+    pulsar_client = get_pulsar_client()
 
-    producer = client.create_producer(
+    producer = pulsar_client.create_producer(
         topic=f"transformed{identifier}",
         producer_name=f"transformer{identifier}",
         chunking_enabled=True,
