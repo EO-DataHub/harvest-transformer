@@ -5,11 +5,9 @@ from typing import Union
 from urllib.parse import urlparse
 
 import boto3
-from botocore.exceptions import ClientError
 
 from .link_processor import LinkProcessor
 from .render_processor import RenderProcessor
-from .utils import URLAccessError, get_file_from_url
 from .workflow_processor import WorkflowProcessor
 
 # configure boto3 logging
@@ -28,25 +26,6 @@ if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
 else:
     s3_client = boto3.client("s3")
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
-
-
-def upload_file_s3(body: str, bucket: str, key: str):
-    """Upload data to an S3 bucket."""
-    try:
-        s3_client.put_object(Body=body, Bucket=bucket, Key=key)
-    except ClientError as e:
-        logging.error(f"File upload failed: {e}")
-        raise
-
-
-def delete_file_s3(bucket: str, key: str):
-    """Delete data in an S3 bucket."""
-    try:
-        s3_client.delete_object(Bucket=bucket, Key=key)
-        logging.info(f"Deleted file {key} from bucket {bucket}.")
-    except ClientError as e:
-        logging.error(f"File deletion failed: {e}")
-        raise
 
 
 def reformat_key(key: str) -> str:
@@ -83,16 +62,6 @@ def transform_key(file_name: str, source: str, target: str) -> str:
     return transformed_key
 
 
-def get_file_s3(bucket: str, key: str) -> str:
-    """Retrieve data from an S3 bucket."""
-    try:
-        file_obj = s3_client.get_object(Bucket=bucket, Key=key)
-        return file_obj["Body"].read().decode("utf-8")
-    except ClientError as e:
-        logging.error(f"File retrieval failed: {e}")
-        raise
-
-
 def is_valid_url(url: str) -> bool:
     """Checks if a given URL is valid"""
     try:
@@ -100,24 +69,6 @@ def is_valid_url(url: str) -> bool:
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
-
-
-def get_file_contents_as_json(file_location: str, bucket_name: str = None) -> dict:
-    """Returns JSON object of contents located at file_location"""
-    if is_valid_url(file_location):
-        file_contents = get_file_from_url(file_location)
-    else:
-        file_contents = get_file_s3(bucket_name, file_location)
-    try:
-        return json.loads(file_contents)
-    except ValueError:
-        # Invalid JSON. File returned as is.
-        logging.info(f"File {file_location} is not valid JSON.")
-        return file_contents
-    except URLAccessError:
-        # Invalid URL. Raise error for notification
-        logging.error(f"File {file_location} is invalid.")
-        raise
 
 
 def update_file(

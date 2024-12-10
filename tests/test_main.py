@@ -1,17 +1,11 @@
 import json
-import unittest.mock
-from unittest.mock import patch
 
 from harvest_transformer.transformer import (
-    delete_file_s3,
-    get_file_contents_as_json,
-    get_file_s3,
     get_new_catalog_id_from_target,
     is_valid_url,
     reformat_key,
     transform_key,
     update_catalog_id,
-    upload_file_s3,
 )
 
 
@@ -115,82 +109,6 @@ def test_is_valid_url_pass():
 def test_is_valid_url_fail():
     invalid_url = "%https://invalid-test-url.com"
     assert not is_valid_url(invalid_url)
-
-
-def test_upload_file_s3():
-
-    # Test data
-    body = "test data"
-    bucket = "test-bucket"
-    key = "test/key.txt"
-
-    # Mock the S3 client
-    with unittest.mock.patch("harvest_transformer.transformer.s3_client") as mock_s3_client:
-        # Call upload_file_s3
-        upload_file_s3(body, bucket, key)
-
-        # Assert put_object was called correctly
-        mock_s3_client.put_object.assert_called_once_with(Body=body, Bucket=bucket, Key=key)
-
-
-def test_delete_file_s3():
-
-    # Test data
-    bucket = "test-bucket"
-    key = "test/key.txt"
-
-    # Mock the S3 client
-    with unittest.mock.patch("harvest_transformer.transformer.s3_client") as mock_s3_client:
-        # Call upload_file_s3
-        delete_file_s3(bucket, key)
-
-        # Assert delete_object was called correctly
-        mock_s3_client.delete_object.assert_called_once_with(Bucket=bucket, Key=key)
-
-
-def test_get_file_s3():
-
-    # Test data
-    bucket = "test-bucket"
-    key = "test/key.txt"
-
-    # Mock the S3 client
-    with unittest.mock.patch("harvest_transformer.transformer.s3_client") as mock_s3_client:
-        # Call upload_file_s3
-        get_file_s3(bucket, key)
-
-        # Assert delete_object was called correctly
-        mock_s3_client.get_object.assert_called_once_with(Bucket=bucket, Key=key)
-
-
-@patch("harvest_transformer.transformer.get_file_from_url")
-def test_get_file_contents_as_json_url(mock_get_file_from_url):
-    # Mock return value for get_file_from_url
-    mock_get_file_from_url.return_value = '{"key": "value from URL"}'
-
-    # Call the function with a URL
-    result = get_file_contents_as_json("https://test-catalog.temp.data.com")
-
-    # Assert the expected result
-    assert result == {"key": "value from URL"}
-
-    # Ensure the mock was called
-    mock_get_file_from_url.assert_called_once_with("https://test-catalog.temp.data.com")
-
-
-@patch("harvest_transformer.transformer.get_file_s3")
-def test_get_file_contents_as_json_s3(mock_get_file_s3):
-    # Mock return value for get_file_from_url
-    mock_get_file_s3.return_value = '{"key": "value from S3"}'
-
-    # Call the function with a URL
-    result = get_file_contents_as_json("file.json", "dummy_bucket")
-
-    # Assert the expected result
-    assert result == {"key": "value from S3"}
-
-    # Ensure the mock was called
-    mock_get_file_s3.assert_called_once_with("dummy_bucket", "file.json")
 
 
 class Message:

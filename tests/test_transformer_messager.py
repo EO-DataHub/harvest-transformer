@@ -7,9 +7,6 @@ from eodhp_utils.messagers import Messager
 
 from harvest_transformer.transformer_messager import TransformerMessager
 
-# from munch import DefaultMunch
-# from pytest_mock import MockerFixture
-
 
 @mock.patch("harvest_transformer.transformer_messager.TransformerMessager.process_update_body")
 def test_process_update(mock_process_update_body):
