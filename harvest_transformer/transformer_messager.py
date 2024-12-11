@@ -31,6 +31,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
         self, entry_body: Union[dict, str], cat_path: str, source: str, target: str
     ) -> Sequence[CatalogueChangeMessager.Action]:
         workspace_from_msg = self.get_workspace_from_msg()
+        logging.error(cat_path)
         output_root = os.getenv("OUTPUT_ROOT")
         entry_body = transform(
             file_name=cat_path,
@@ -41,6 +42,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
             workspace=workspace_from_msg,
         )
         updated_key = transform_key(cat_path, source, target)
+        logging.error(updated_key)
         return [Messager.OutputFileAction(file_body=entry_body, cat_path=updated_key)]
 
     def process_delete(
