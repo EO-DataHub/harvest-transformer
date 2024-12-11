@@ -1,8 +1,7 @@
 import logging
 import os
 
-from eodhp_utils import run
-from eodhp_utils.runner import get_boto3_session, get_pulsar_client
+from eodhp_utils.runner import get_boto3_session, get_pulsar_client, run
 
 from .transformer_messager import TransformerMessager
 
