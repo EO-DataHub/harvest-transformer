@@ -132,6 +132,7 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
 
 
 def transform(
+    file_name: str,
     entry_body: Union[dict, str],
     source: str,
     target: str,
@@ -148,6 +149,8 @@ def transform(
 
     # Define list of processors
     processors = [WorkflowProcessor(), LinkProcessor(workspace), RenderProcessor()]
-    entry_body = update_file(source, target_location, entry_body, output_root, processors)
+    entry_body = update_file(
+        file_name, source, target_location, entry_body, output_root, processors
+    )
 
     return entry_body
