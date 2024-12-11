@@ -37,6 +37,7 @@ def main():
 
     run(
         {f"harvested{identifier}": transformer_messager},
+        subscription_name=f"transformer{identifier}",
     )
 
 
