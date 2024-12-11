@@ -22,7 +22,7 @@ class LinkProcessor:
         self.workspace = workspace
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
-        self.spdx_bucket_name = os.getenv("S3_BUCKET")
+        self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
