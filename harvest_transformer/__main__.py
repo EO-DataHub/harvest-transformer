@@ -31,7 +31,7 @@ def main():
     transformer_messager = TransformerMessager(
         s3_client=s3_client,
         output_bucket=destination_bucket,
-        cat_output_prefix="transformed",
+        cat_output_prefix="transformed/",
         producer=producer,
     )
 

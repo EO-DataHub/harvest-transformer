@@ -31,7 +31,7 @@ def link_processor_fixture(mocker):
     ) as mock_map_licence_codes_to_filenames:
         mock_map_licence_codes_to_filenames.return_value = {"aal": "AAL"}
         mocker.patch.dict(
-            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
+            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_SPDX_BUCKET": "SPDX_BUCKET"}
         )
         workspace = "mock_workspace"
         processor = LinkProcessor(workspace)

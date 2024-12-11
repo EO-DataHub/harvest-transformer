@@ -33,7 +33,6 @@ class LinkProcessor:
     def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
         # Initialize an S3 client
         s3 = boto3.client("s3")
-        logging.info(f"Bucket name {bucket_name} and prefix {prefix}")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
 
