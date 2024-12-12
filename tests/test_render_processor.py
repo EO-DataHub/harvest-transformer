@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from harvest_transformer.__main__ import update_file
 from harvest_transformer.render_processor import RenderProcessor
+from harvest_transformer.transformer import update_file
 
 SOURCE_PATH = "https://example.link.for.test/"
 TARGET = "/target_directory/"
@@ -94,7 +94,7 @@ def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
         file_name=mock_file_name,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=mock_sentinel_collection,
+        entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
     )
@@ -138,7 +138,7 @@ def test_sentinel2_ard_collection__missing_fields(
         file_name=mock_file_name,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=mock_sentinel_collection,
+        entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
     )
@@ -177,7 +177,7 @@ def test_not_sentinel2_ard_collection(key, value, mock_sentinel_collection, mock
         file_name=mock_file_name,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=mock_sentinel_collection,
+        entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
     )

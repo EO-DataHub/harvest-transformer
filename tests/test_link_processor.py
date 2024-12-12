@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
+from harvest_transformer.transformer import update_file
 from harvest_transformer.workflow_processor import WorkflowProcessor
 
 SOURCE_PATH = "https://example.link.for.test/"
@@ -31,7 +31,7 @@ def link_processor_fixture(mocker):
     ) as mock_map_licence_codes_to_filenames:
         mock_map_licence_codes_to_filenames.return_value = {"aal": "AAL"}
         mocker.patch.dict(
-            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_BUCKET": "SPDX_BUCKET"}
+            os.environ, {"HOSTED_ZONE": "test-url.org.uk", "S3_SPDX_BUCKET": "SPDX_BUCKET"}
         )
         workspace = "mock_workspace"
         processor = LinkProcessor(workspace)
@@ -53,7 +53,7 @@ def test_links_replacement_only(link_processor_fixture):
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=json_data,
+        entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
     )
@@ -114,7 +114,7 @@ def test_links_add_missing_links(link_processor_fixture):
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=json_data,
+        entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
     )
@@ -150,7 +150,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=json_data,
+        entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
     )
@@ -214,7 +214,7 @@ def test_workflow_does_not_alter_non_workflows():
         file_name=stac_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=json_data,
+        entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
     )

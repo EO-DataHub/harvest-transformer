@@ -22,7 +22,7 @@ class LinkProcessor:
         self.workspace = workspace
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
-        self.spdx_bucket_name = os.getenv("S3_BUCKET")
+        self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
         )
@@ -33,7 +33,6 @@ class LinkProcessor:
     def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
         # Initialize an S3 client
         s3 = boto3.client("s3")
-        logging.info(f"Bucket name {bucket_name} and prefix {prefix}")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
 
@@ -196,7 +195,7 @@ class LinkProcessor:
         file_name: str,
         source: str,
         target_location: str,
-        file_body: Union[dict, str],
+        entry_body: Union[dict, str],
         output_root: str,
         **kwargs,
     ) -> dict:
@@ -206,22 +205,22 @@ class LinkProcessor:
         """
 
         # Only concerned with STAC data here, other files can be uploaded as is
-        if not isinstance(file_body, dict):
-            return file_body
+        if not isinstance(entry_body, dict):
+            return entry_body
 
         # Delete unnecessary sections
-        file_body = self.delete_sections(file_body)
+        entry_body = self.delete_sections(entry_body)
         try:
             self_link = [
-                link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
+                link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
         except (TypeError, IndexError):
             logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
-            self.add_link_if_missing(file_body, "self", source + file_name)
+            self.add_link_if_missing(entry_body, "self", source + file_name)
             self_link = [
-                link.get("href") for link in file_body.get("links") if link.get("rel") == "self"
+                link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
 
         output_self = self_link.replace(source, target_location, 1)
@@ -231,19 +230,21 @@ class LinkProcessor:
                 f"self link {self_link}, source {source}, and target {target_location}. "
                 f"Unable to rewrite links."
             )
-            return file_body
+            return entry_body
 
         # Update links to STAC best practices
-        file_body = self.add_missing_links(file_body, output_root, output_self)
+        entry_body = self.add_missing_links(entry_body, output_root, output_self)
 
         # Ensure SPDX license links are present
-        self.ensure_license_links(file_body)
+        self.ensure_license_links(entry_body)
 
         # Update links to refer to EODH
-        file_body = self.rewrite_links(file_body, source, target_location, output_self, output_root)
+        entry_body = self.rewrite_links(
+            entry_body, source, target_location, output_self, output_root
+        )
 
         # Return json for further transform and upload
-        return file_body
+        return entry_body
 
     def copy_license_to_eodh(self, href: str) -> str:
         """Copy the license file to the EODH public bucket and return the new URL."""

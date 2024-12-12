@@ -3,8 +3,8 @@ import json
 from unittest.mock import patch
 from uuid import UUID
 
-from harvest_transformer.__main__ import update_file
 from harvest_transformer.link_processor import LinkProcessor
+from harvest_transformer.transformer import update_file
 from harvest_transformer.workflow_processor import WorkflowProcessor
 
 SOURCE_PATH = "https://example.link.for.test/"
@@ -34,7 +34,7 @@ def test_workflows_with_only_cwl_input_valid():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
     )
@@ -64,7 +64,7 @@ def test_workflows_with_only_cwl_input_invalid():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
     )
@@ -104,7 +104,7 @@ def test_workflows_dont_overwrite():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
     )
@@ -130,7 +130,7 @@ def test_workflows_fill_blanks():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
     )
@@ -158,7 +158,7 @@ def test_workflows_correct_self_link():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
     )
@@ -187,7 +187,7 @@ def test_workflows_and_links_with_new_self_link():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
     )
@@ -217,7 +217,7 @@ def test_workflows_and_links_with_only_cwl_input_valid():
         file_name=stac_input_location,
         source=SOURCE_PATH,
         target_location=OUTPUT_ROOT + TARGET,
-        file_body=file_json,
+        entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
     )

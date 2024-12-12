@@ -16,11 +16,11 @@ renderable_collections = {
 
 
 class RenderProcessor:
-    def is_renderable(self, file_body: dict) -> bool:
+    def is_renderable(self, entry_body: dict) -> bool:
         """Check to see if file describes a collection that is renderable"""
         return (
-            file_body.get("type") == "Collection"
-            and file_body.get("id") in renderable_collections.keys()
+            entry_body.get("type") == "Collection"
+            and entry_body.get("id") in renderable_collections.keys()
         )
 
     def update_file(
@@ -28,7 +28,7 @@ class RenderProcessor:
         file_name: str,
         source: str,
         target_location: str,
-        file_body: Union[dict, str],
+        entry_body: Union[dict, str],
         output_root: str,
         **kwargs,
     ) -> dict:
@@ -38,19 +38,19 @@ class RenderProcessor:
         """
 
         # Only concerned with STAC data here, other files can be uploaded as is
-        if not isinstance(file_body, dict):
-            return file_body
+        if not isinstance(entry_body, dict):
+            return entry_body
 
-        if self.is_renderable(file_body):
+        if self.is_renderable(entry_body):
             logging.info(f"{file_name} is a Renderable Collection file")
-            file_body.setdefault("stac_extensions", [])
+            entry_body.setdefault("stac_extensions", [])
 
             render_extension_url = "https://stac-extensions.github.io/render/v1.0.0/schema.json"
 
-            if render_extension_url not in file_body["stac_extensions"]:
-                file_body["stac_extensions"].append(render_extension_url)
+            if render_extension_url not in entry_body["stac_extensions"]:
+                entry_body["stac_extensions"].append(render_extension_url)
 
-            file_body["renders"] = renderable_collections[file_body.get("id")]
+            entry_body["renders"] = renderable_collections[entry_body.get("id")]
 
         # Return json for further transform and upload
-        return file_body
+        return entry_body
