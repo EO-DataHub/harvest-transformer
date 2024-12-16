@@ -1,5 +1,3 @@
-import json
-import logging
 import os
 from typing import Sequence, Union
 
@@ -13,20 +11,6 @@ from .transformer import transform, transform_key
 
 
 class TransformerMessager(CatalogueChangeBodyMessager):
-    def process_update(
-        self, input_bucket: str, input_key: str, cat_path: str, source: str, target: str
-    ) -> Sequence[Messager.Action]:
-        get_result = self.s3_client.get_object(Bucket=input_bucket, Key=input_key)
-        entry_body = get_result["Body"].read()
-        # Transformer needs updating to ensure that content type is set to this
-        # if get_result["ResponseMetadata"]["HTTPHeaders"]["content-type"] == "application/json":
-        try:
-            entry_body = json.loads(entry_body)
-        except ValueError:
-            # Not a JSON file - consume it as a string
-            logging.info(f"File {input_key} is not valid JSON.")
-        return self.process_update_body(entry_body, cat_path, source, target)
-
     def process_update_body(
         self, entry_body: Union[dict, str], cat_path: str, source: str, target: str
     ) -> Sequence[CatalogueChangeMessager.Action]:
