@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from typing import Union
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import boto3
 
@@ -142,7 +142,7 @@ def transform(
     """Load file from given key as json and update by applying list of processors"""
 
     # Compose target_location
-    target_location = output_root + target
+    target_location = urljoin(output_root, target)
 
     # Update catalog ID if necessary
     entry_body = update_catalog_id(entry_body, target)
