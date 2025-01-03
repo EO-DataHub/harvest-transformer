@@ -73,6 +73,8 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
         producer=mock_producer,
     )
 
+    test_transformer_messager.input_change_msg = {"bucket_name": "test-bucket"}
+
     result = test_transformer_messager.process_update_body(
         stac_item, "test/key/path.json", "test/", "test-catalog/"
     )
@@ -80,6 +82,7 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     expected_action = Messager.OutputFileAction(
         file_body=stac_item,
         cat_path="test-catalog/key/path.json",
+        bucket="test-bucket",
     )
 
     mock_transform.assert_called_once_with(

@@ -25,7 +25,13 @@ class TransformerMessager(CatalogueChangeBodyMessager):
             workspace=workspace_from_msg,
         )
         updated_key = transform_key(cat_path, source, target)
-        return [Messager.OutputFileAction(file_body=entry_body, cat_path=updated_key)]
+        return [
+            Messager.OutputFileAction(
+                file_body=entry_body,
+                bucket=self.input_change_msg.get("bucket_name"),
+                cat_path=updated_key,
+            )
+        ]
 
     def process_delete(
         self, input_bucket: str, input_key: str, cat_path: str, source: str, target: str
