@@ -17,6 +17,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
         workspace_from_msg = self.get_workspace_from_msg()
         output_root = os.getenv("OUTPUT_ROOT")
         entry_body = transform(
+            self=self,
             file_name=cat_path,
             entry_body=entry_body,
             source=source,

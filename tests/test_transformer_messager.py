@@ -86,6 +86,7 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     )
 
     mock_transform.assert_called_once_with(
+        self=test_transformer_messager,
         file_name="test/key/path.json",
         entry_body=stac_item,
         source="test/",

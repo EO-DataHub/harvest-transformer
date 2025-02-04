@@ -5,6 +5,9 @@ from typing import Union
 from urllib.parse import urljoin, urlparse
 
 import boto3
+import botocore
+import botocore.exceptions
+import jsonpatch
 
 from .link_processor import LinkProcessor
 from .render_processor import RenderProcessor
@@ -131,7 +134,63 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
+def get_patch_from_s3(source_bucket: str, file_name: str):
+    """
+    Check if a patch exists for a given collection inside the patches/ folder in S3.
+    """
+    PATCHES_PREFIX = "patches/supported-datasets/"
+    S3_BUCKET = source_bucket
+
+    if not S3_BUCKET:
+        logging.error("S3_BUCKET environment variable is not set.")
+        return None
+
+    # Extract collection path
+    catalog_and_collection = file_name.split("/")
+    if len(catalog_and_collection) < 2:
+        logging.info(f"Skipping patch lookup: Invalid file structure in {file_name}")
+        return None
+    patch_path = f"{catalog_and_collection[-2]}/collections/{catalog_and_collection[-1]}"
+
+    if not patch_path:
+        logging.info(f"Skipping patch lookup: No valid collection ID found in {file_name}")
+        return None
+
+    # Construct patch file path in S3
+    patch_key = f"{PATCHES_PREFIX}{patch_path}"
+
+    logging.info(f"Looking for patch at: s3://{S3_BUCKET}/{patch_key}")
+
+    try:
+        response = s3_client.get_object(Bucket=S3_BUCKET, Key=patch_key)
+        patch_data = json.loads(response["Body"].read().decode("utf-8"))
+        logging.info(f"Patch found for collection: {patch_path}")
+        return patch_data
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            logging.info(f"No patch found for collection: {patch_path}")
+            return None
+        else:
+            logging.error(f"Unexpected error retrieving patch for {patch_path}: {e}")
+            return None
+    except Exception as e:
+        logging.error(f"Error retrieving patch for {patch_path}: {e}")
+        return None
+
+
+def apply_patch(original: dict, patch: list) -> dict:
+    """Apply a JSON patch ensuring output remains a dictionary."""
+    try:
+        patch_obj = jsonpatch.JsonPatch(patch)
+        patched = patch_obj.apply(original)
+        return patched
+    except jsonpatch.JsonPatchException as e:
+        logging.error(f"Error applying patch: {e}")
+        return original
+
+
 def transform(
+    self: object,
     file_name: str,
     entry_body: Union[dict, str],
     source: str,
@@ -139,7 +198,21 @@ def transform(
     output_root: str,
     workspace: str,
 ):
-    """Load file from given key as json and update by applying list of processors"""
+    """Load file from given key as JSON and update by applying list of processors"""
+
+    patch_data = None
+
+    # Check for a patch and apply it
+    if entry_body.get("type") == "Collection":
+        patch_data = get_patch_from_s3(self.input_change_msg.get("bucket_name"), file_name)
+
+        # If patch data exists, apply it to entry_body
+        if patch_data:
+            entry_body = apply_patch(entry_body, patch_data)
+
+    # If patch data exists, apply it to entry_body
+    if patch_data:
+        entry_body = apply_patch(entry_body, patch_data)
 
     # Compose target_location
     target_location = urljoin(output_root, target)
