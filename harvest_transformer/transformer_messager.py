@@ -40,8 +40,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
         # Calculated updated key
         updated_key = transform_key(cat_path, source, target)
         # Action to remove file from S3
-        actions = [Messager.OutputFileAction(file_body=None, cat_path=updated_key)]
-        return actions
+        return [Messager.OutputFileAction(file_body=None, cat_path=updated_key)]
 
     def get_workspace_from_msg(self):
         return self.input_change_msg.get("workspace")
