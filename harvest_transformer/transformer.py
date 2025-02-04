@@ -210,10 +210,6 @@ def transform(
         if patch_data:
             entry_body = apply_patch(entry_body, patch_data)
 
-    # If patch data exists, apply it to entry_body
-    if patch_data:
-        entry_body = apply_patch(entry_body, patch_data)
-
     # Compose target_location
     target_location = urljoin(output_root, target)
 
