@@ -66,6 +66,10 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
+jsonpatch==1.33
+    # via Harvest-Transformer (pyproject.toml)
+jsonpointer==3.0.0
+    # via jsonpatch
 jsonschema==3.2.0
     # via
     #   Harvest-Transformer (pyproject.toml)
