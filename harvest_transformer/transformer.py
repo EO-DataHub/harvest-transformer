@@ -134,47 +134,29 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
-def get_patch_from_s3(source_bucket: str, file_name: str):
+def get_patch(file_name: str, patch_bucket: str) -> Union[dict, None]:
     """
     Check if a patch exists for a given collection inside the patches/ folder in S3.
     """
-    PATCHES_PREFIX = "patches/supported-datasets/"
-    S3_BUCKET = source_bucket
+    patch_prefix = os.getenv("PATCH_PREFIX")
+    patch_key = f"{patch_prefix}/{file_name}"
 
-    if not S3_BUCKET:
-        logging.error("S3_BUCKET environment variable is not set.")
-        return None
-
-    # Extract collection path
-    catalog_and_collection = file_name.split("/")
-    if len(catalog_and_collection) < 2:
-        logging.info(f"Skipping patch lookup: Invalid file structure in {file_name}")
-        return None
-    patch_path = f"{catalog_and_collection[-2]}/collections/{catalog_and_collection[-1]}"
-
-    if not patch_path:
-        logging.info(f"Skipping patch lookup: No valid collection ID found in {file_name}")
-        return None
-
-    # Construct patch file path in S3
-    patch_key = f"{PATCHES_PREFIX}{patch_path}"
-
-    logging.info(f"Looking for patch at: s3://{S3_BUCKET}/{patch_key}")
+    logging.info(f"Looking for patch at: s3://{patch_bucket}/{patch_key}")
 
     try:
-        response = s3_client.get_object(Bucket=S3_BUCKET, Key=patch_key)
+        response = s3_client.get_object(Bucket=patch_bucket, Key=patch_key)
         patch_data = json.loads(response["Body"].read().decode("utf-8"))
-        logging.info(f"Patch found for collection: {patch_path}")
+        logging.info(f"Patch found for collection: {patch_key}")
         return patch_data
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "NoSuchKey":
-            logging.info(f"No patch found for collection: {patch_path}")
+            logging.info(f"No patch found for collection: {patch_key}")
             return None
         else:
-            logging.error(f"Unexpected error retrieving patch for {patch_path}: {e}")
+            logging.error(f"Unexpected error retrieving patch for {patch_key}: {e}")
             return None
     except Exception as e:
-        logging.error(f"Error retrieving patch for {patch_path}: {e}")
+        logging.error(f"Error retrieving patch for {patch_key}: {e}")
         return None
 
 
@@ -190,21 +172,25 @@ def apply_patch(original: dict, patch: list) -> dict:
 
 
 def transform(
-    self: object,
     file_name: str,
     entry_body: Union[dict, str],
     source: str,
     target: str,
     output_root: str,
     workspace: str,
+    bucket_name: str,
 ):
     """Load file from given key as JSON and update by applying list of processors"""
 
     patch_data = None
+    patch_bucket = os.getenv("PATCH_BUCKET")
 
+    if not patch_bucket:
+        # default to the same bucket as the pulsar source message
+        patch_bucket = bucket_name
     # Check for a patch and apply it
     if entry_body.get("type") == "Collection":
-        patch_data = get_patch_from_s3(self.input_change_msg.get("bucket_name"), file_name)
+        patch_data = get_patch(file_name, patch_bucket)
 
         # If patch data exists, apply it to entry_body
         if patch_data:

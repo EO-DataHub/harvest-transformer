@@ -86,13 +86,13 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     )
 
     mock_transform.assert_called_once_with(
-        self=test_transformer_messager,
         file_name="test/key/path.json",
         entry_body=stac_item,
         source="test/",
         target="test-catalog/",
         output_root="https://test-url-root.org.uk",
         workspace="test-workspace",
+        bucket_name="test-bucket",
     )
 
     assert result == [expected_action]
