@@ -24,7 +24,7 @@ certifi==2024.8.30
     #   requests
 charset-normalizer==3.4.0
     # via requests
-eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.4
+eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5
     # via Harvest-Transformer (pyproject.toml)
 html-sanitizer==2.4.4
     # via Harvest-Transformer (pyproject.toml)
