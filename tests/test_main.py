@@ -46,7 +46,9 @@ def test_reformat_key_collection():
 
 
 @mock.patch("harvest_transformer.transformer.s3_client.get_object")
-@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches"})
+@mock.patch.dict(
+    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
+)
 def test_get_patch_found(mock_get_object):
     # Mock the S3 response
     mock_response = {
@@ -56,51 +58,55 @@ def test_get_patch_found(mock_get_object):
     }
     mock_get_object.return_value = mock_response
 
-    file_name = "supported-datasets/ceda-stac-catalogue/cmip6"
-    patch_bucket = "catalogue-population-eodhp-dev"
+    cat_path = "supported-datasets/ceda-stac-catalogue/cmip6"
 
-    patch_data = get_patch(file_name, patch_bucket)
+    patch_data = get_patch(cat_path)
 
     assert patch_data is not None
     assert patch_data == {"patch": "data"}
     mock_get_object.assert_called_once_with(
-        Bucket=patch_bucket, Key="patches/supported-datasets/ceda-stac-catalogue/cmip6"
+        Bucket="catalogue-population-eodhp-dev",
+        Key="patches/supported-datasets/ceda-stac-catalogue/cmip6",
     )
 
 
 @mock.patch("harvest_transformer.transformer.s3_client.get_object")
-@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches"})
+@mock.patch.dict(
+    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
+)
 def test_get_patch_not_found(mock_get_object):
     # Mock the S3 ClientError for NoSuchKey
     mock_get_object.side_effect = botocore.exceptions.ClientError(
         {"Error": {"Code": "NoSuchKey"}}, "get_object"
     )
 
-    file_name = "supported-datasets/ceda-stac-catalogue/cmip6"
-    patch_bucket = "catalogue-population-eodhp-dev"
+    cat_path = "supported-datasets/ceda-stac-catalogue/cmip6"
 
-    patch_data = get_patch(file_name, patch_bucket)
+    patch_data = get_patch(cat_path)
 
     assert patch_data is None
     mock_get_object.assert_called_once_with(
-        Bucket=patch_bucket, Key="patches/supported-datasets/ceda-stac-catalogue/cmip6"
+        Bucket="catalogue-population-eodhp-dev",
+        Key="patches/supported-datasets/ceda-stac-catalogue/cmip6",
     )
 
 
 @mock.patch("harvest_transformer.transformer.s3_client.get_object")
-@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches"})
+@mock.patch.dict(
+    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
+)
 def test_get_patch_unexpected_error(mock_get_object):
     # Mock an unexpected error
     mock_get_object.side_effect = Exception("Unexpected error")
 
-    file_name = "supported-datasets/ceda-stac-catalogue/cmip6"
-    patch_bucket = "catalogue-population-eodhp-dev"
+    cat_path = "supported-datasets/ceda-stac-catalogue/cmip6"
 
-    patch_data = get_patch(file_name, patch_bucket)
+    patch_data = get_patch(cat_path)
 
     assert patch_data is None
     mock_get_object.assert_called_once_with(
-        Bucket=patch_bucket, Key="patches/supported-datasets/ceda-stac-catalogue/cmip6"
+        Bucket="catalogue-population-eodhp-dev",
+        Key="patches/supported-datasets/ceda-stac-catalogue/cmip6",
     )
 
 

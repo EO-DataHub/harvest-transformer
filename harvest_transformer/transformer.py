@@ -134,14 +134,13 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
-def get_patch(file_name: str, patch_bucket: str) -> Union[dict, None]:
+def get_patch(cat_path: str) -> Union[dict, None]:
     """
     Check if a patch exists for a given collection inside the patches/ folder in S3.
     """
-    patch_prefix = os.getenv("PATCH_PREFIX")
-    patch_key = f"{patch_prefix}/{file_name}"
-
-    logging.info(f"Looking for patch at: s3://{patch_bucket}/{patch_key}")
+    patch_bucket = os.getenv("PATCH_BUCKET") or os.getenv("S3_BUCKET")
+    patch_prefix = os.getenv("PATCH_PREFIX", "patches")
+    patch_key = f"{patch_prefix}/{cat_path}"
 
     try:
         response = s3_client.get_object(Bucket=patch_bucket, Key=patch_key)
@@ -153,10 +152,10 @@ def get_patch(file_name: str, patch_bucket: str) -> Union[dict, None]:
             logging.info(f"No patch found for collection: {patch_key}")
             return None
         else:
-            logging.error(f"Unexpected error retrieving patch for {patch_key}: {e}")
+            logging.exception(f"Unexpected error retrieving patch for {patch_key}: {e}")
             return None
     except Exception as e:
-        logging.error(f"Error retrieving patch for {patch_key}: {e}")
+        logging.exception(f"Error retrieving patch for {patch_key}: {e}")
         return None
 
 
@@ -178,19 +177,14 @@ def transform(
     target: str,
     output_root: str,
     workspace: str,
-    bucket_name: str,
 ):
     """Load file from given key as JSON and update by applying list of processors"""
 
     patch_data = None
-    patch_bucket = os.getenv("PATCH_BUCKET")
 
-    if not patch_bucket:
-        # default to the same bucket as the pulsar source message
-        patch_bucket = bucket_name
     # Check for a patch and apply it
     if entry_body.get("type") == "Collection":
-        patch_data = get_patch(file_name, patch_bucket)
+        patch_data = get_patch(file_name)
 
         # If patch data exists, apply it to entry_body
         if patch_data:

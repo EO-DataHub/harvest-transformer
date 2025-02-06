@@ -16,7 +16,6 @@ class TransformerMessager(CatalogueChangeBodyMessager):
     ) -> Sequence[CatalogueChangeMessager.Action]:
         workspace_from_msg = self.get_workspace_from_msg()
         output_root = os.getenv("OUTPUT_ROOT")
-        bucket_name = self.input_change_msg.get("bucket_name")
         entry_body = transform(
             file_name=cat_path,
             entry_body=entry_body,
@@ -24,7 +23,6 @@ class TransformerMessager(CatalogueChangeBodyMessager):
             target=target,
             output_root=output_root,
             workspace=workspace_from_msg,
-            bucket_name=bucket_name,
         )
         updated_key = transform_key(cat_path, source, target)
         return [
