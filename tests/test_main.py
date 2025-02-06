@@ -27,6 +27,15 @@ def test_reformat_key_git_harvester():
     assert transformed_key == "test-datasets/test-catalog/test-collection.json"
 
 
+def test_reformat_key_file_harvester():
+    file_name = "file-harvester/test-datasets/test-catalog/collections/test-collection"
+    source = "/"
+    target = "/"
+    transformed_key = transform_key(file_name, source, target)
+
+    assert transformed_key == "test-datasets/test-catalog/test-collection.json"
+
+
 def test_reformat_key_catalog():
     key = "transformed/test-datasets/test-catalog"
     reformatted_key = reformat_key(key)
