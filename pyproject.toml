@@ -72,7 +72,8 @@ dependencies = [
     "pyyaml",
     "requests",
     "html-sanitizer",
-    "eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5",
+    "jsonpatch",
+    "eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5"
 ]
 
 # List additional groups of dependencies here (e.g. development

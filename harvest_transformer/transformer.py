@@ -5,6 +5,9 @@ from typing import Union
 from urllib.parse import urljoin, urlparse
 
 import boto3
+import botocore
+import botocore.exceptions
+import jsonpatch
 
 from .link_processor import LinkProcessor
 from .render_processor import RenderProcessor
@@ -131,6 +134,42 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
+def get_patch(cat_path: str) -> Union[dict, None]:
+    """
+    Check if a patch exists for a given collection inside the patches/ folder in S3.
+    """
+    patch_bucket = os.getenv("PATCH_BUCKET") or os.getenv("S3_BUCKET")
+    patch_prefix = os.getenv("PATCH_PREFIX", "patches")
+    patch_key = f"{patch_prefix}/{cat_path}"
+
+    try:
+        response = s3_client.get_object(Bucket=patch_bucket, Key=patch_key)
+        patch_data = json.loads(response["Body"].read().decode("utf-8"))
+        logging.info(f"Patch found for collection: {patch_key}")
+        return patch_data
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchKey":
+            logging.info(f"No patch found for collection: {patch_key}")
+            return None
+        else:
+            logging.exception(f"Unexpected error retrieving patch for {patch_key}: {e}")
+            return None
+    except Exception as e:
+        logging.exception(f"Error retrieving patch for {patch_key}: {e}")
+        return None
+
+
+def apply_patch(original: dict, patch: list) -> dict:
+    """Apply a JSON patch ensuring output remains a dictionary."""
+    try:
+        patch_obj = jsonpatch.JsonPatch(patch)
+        patched = patch_obj.apply(original)
+        return patched
+    except jsonpatch.JsonPatchException as e:
+        logging.error(f"Error applying patch: {e}")
+        return original
+
+
 def transform(
     file_name: str,
     entry_body: Union[dict, str],
@@ -139,7 +178,17 @@ def transform(
     output_root: str,
     workspace: str,
 ):
-    """Load file from given key as json and update by applying list of processors"""
+    """Load file from given key as JSON and update by applying list of processors"""
+
+    patch_data = None
+
+    # Check for a patch and apply it
+    if entry_body.get("type") == "Collection":
+        patch_data = get_patch(file_name)
+
+        # If patch data exists, apply it to entry_body
+        if patch_data:
+            entry_body = apply_patch(entry_body, patch_data)
 
     # Compose target_location
     target_location = urljoin(output_root, target)
