@@ -6,6 +6,7 @@ from eodhp_utils.messagers import (
     CatalogueChangeMessager,
     Messager,
 )
+from pulsar import Message
 
 from .transformer import transform, transform_key
 
@@ -43,3 +44,15 @@ class TransformerMessager(CatalogueChangeBodyMessager):
 
     def get_workspace_from_msg(self):
         return self.input_change_msg.get("workspace")
+
+    def gen_empty_catalogue_message(self, msg: Message) -> dict:
+        """
+        Generate an empty catalogue change message without updated_keys, deleted_keys, or added_keys.
+        """
+        return {
+            "id": self.input_change_msg.get("id"),
+            "workspace": self.input_change_msg.get("workspace"),
+            "bucket_name": self.input_change_msg.get("bucket_name"),
+            "source": self.input_change_msg.get("source"),
+            "target": self.input_change_msg.get("target"),
+        }
