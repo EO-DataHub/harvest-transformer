@@ -183,7 +183,7 @@ def transform(
     patch_data = None
 
     # Check for a patch and apply it
-    if entry_body.get("type") == "Collection":
+    if isinstance(entry_body, dict) and entry_body.get("type") == "Collection":
         patch_data = get_patch(file_name)
 
         # If patch data exists, apply it to entry_body
