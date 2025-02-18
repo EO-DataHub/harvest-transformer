@@ -93,6 +93,7 @@ class LinkProcessor:
             "search",
             "service-desc",
             "service-doc",
+            "conformance",
         ]
 
         new_links = []
@@ -249,8 +250,19 @@ class LinkProcessor:
     def copy_license_to_eodh(self, href: str) -> str:
         """Copy the license file to the EODH public bucket and return the new URL."""
         # Download the license file
-        response = requests.get(href)
-        response.raise_for_status()
+        try:
+            response = requests.get(
+                href, timeout=5
+            )  # only wait for 5 seconds to download the license
+        except Exception as e:
+            logging.error(f"Failed to download license file from {href}: {e}")
+            return href
+        if response.status_code != 200:
+            logging.error(
+                f"Failed to download license file from {href}, status code {response.status_code}"
+            )
+            return href
+
         # Sanitize HTML if necessary
         content_type = response.headers.get("Content-Type", "")
         content = response.content
@@ -268,7 +280,8 @@ class LinkProcessor:
             return f"https://{self.hosted_zone}/{new_path}"
         except self.s3_client.exceptions.ClientError as e:
             if e.response["Error"]["Code"] != "404":
-                raise
+                logging.error("Failed to check if license file exists in EODH public bucket")
+                return href
 
         # Upload the file to the EODH public bucket
         self.s3_client.put_object(
