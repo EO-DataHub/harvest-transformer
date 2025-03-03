@@ -30,8 +30,6 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %
 
 def reformat_key(key: str) -> str:
     """Reformat key to conform to nested catalog/collections standard for EODHP"""
-    key = key.replace("/items", "")
-    key = key.replace("/collections", "")
 
     if key.endswith("/"):
         key = key[:-1]
@@ -80,7 +78,7 @@ def update_file(
     processors: list,
 ) -> str:
     """
-    Updates content within a given file name. File name may either be a URL or S3 key.
+    Updates content within a given file name. File name is an S3 key.
     Uploads updated file contents to updated_key within the given bucket.
     """
 
