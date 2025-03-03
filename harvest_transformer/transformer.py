@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %
 
 
 def reformat_key(key: str) -> str:
-    """Reformat key to conform to nested catalog/collections standard for EODHP"""
+    """Reformat key to remove trailing slashes and add file extension"""
 
     if key.endswith("/"):
         key = key[:-1]

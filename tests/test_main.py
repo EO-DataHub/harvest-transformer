@@ -15,7 +15,7 @@ def test_reformat_key_no_git_harvester():
     target = "test-datasets/test-catalog"
     transformed_key = transform_key(file_name, source, target)
 
-    assert transformed_key == "test-datasets/test-catalog/test-collection.json"
+    assert transformed_key == "test-datasets/test-catalog/collections/test-collection.json"
 
 
 def test_reformat_key_git_harvester():
@@ -24,7 +24,7 @@ def test_reformat_key_git_harvester():
     target = "/"
     transformed_key = transform_key(file_name, source, target)
 
-    assert transformed_key == "test-datasets/test-catalog/test-collection.json"
+    assert transformed_key == "test-datasets/test-catalog/collections/test-collection.json"
 
 
 def test_reformat_key_file_harvester():
@@ -33,7 +33,7 @@ def test_reformat_key_file_harvester():
     target = "/"
     transformed_key = transform_key(file_name, source, target)
 
-    assert transformed_key == "test-datasets/test-catalog/test-collection.json"
+    assert transformed_key == "test-datasets/test-catalog/collections/test-collection.json"
 
 
 def test_reformat_key_catalog():
@@ -45,14 +45,14 @@ def test_reformat_key_catalog():
 def test_reformat_key_collection():
     key = "transformed/test-datasets/test-catalog/collections/test-collection"
     reformatted_key = reformat_key(key)
-    assert reformatted_key == "transformed/test-datasets/test-catalog/test-collection.json"
+    assert reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection.json"
 
 
 def test_reformat_key_item():
     key = "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item"
     reformatted_key = reformat_key(key)
     assert (
-        reformatted_key == "transformed/test-datasets/test-catalog/test-collection/test-item.json"
+        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item.json"
     )
 
 
