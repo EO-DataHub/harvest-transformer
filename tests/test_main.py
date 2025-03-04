@@ -45,14 +45,17 @@ def test_reformat_key_catalog():
 def test_reformat_key_collection():
     key = "transformed/test-datasets/test-catalog/collections/test-collection"
     reformatted_key = reformat_key(key)
-    assert reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection.json"
+    assert (
+        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection.json"
+    )
 
 
 def test_reformat_key_item():
     key = "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item"
     reformatted_key = reformat_key(key)
     assert (
-        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item.json"
+        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection/"
+        "items/test-item.json"
     )
 
 
