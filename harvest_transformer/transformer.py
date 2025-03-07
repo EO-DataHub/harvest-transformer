@@ -32,9 +32,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %
 
 
 def reformat_key(key: str) -> str:
-    """Reformat key to conform to nested catalog/collections standard for EODHP"""
-    key = key.replace("/items", "")
-    key = key.replace("/collections", "")
+    """Reformat key to remove trailing slashes and add file extension"""
 
     if key.endswith("/"):
         key = key[:-1]
@@ -58,7 +56,11 @@ def get_new_catalog_id_from_target(target: str) -> str:
 
 def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
-    transformed_key = file_name.replace("git-harvester/", "", 1)
+    transformed_key = (
+        file_name.replace("git-harvester/", "", 1)
+        .replace("file-harvester/", "", 1)
+        .replace("stac-harvester/", "", 1)
+    )
     if transformed_key == file_name:
         transformed_key = file_name.replace(source, target, 1)
     transformed_key = reformat_key(transformed_key)
@@ -83,7 +85,7 @@ def update_file(
     processors: list,
 ) -> str:
     """
-    Updates content within a given file name. File name may either be a URL or S3 key.
+    Updates content within a given file name. File name is an S3 key.
     Uploads updated file contents to updated_key within the given bucket.
     """
 
