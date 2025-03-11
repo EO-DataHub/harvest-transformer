@@ -112,7 +112,8 @@ class LinkProcessor:
             if rel in relations_to_rewrite:
                 if href.startswith(source):
                     # Link is an absolute link. Replace the source.
-                    link["href"] = href.replace(source, target_location)
+                    if target_location not in href:
+                        link["href"] = href.replace(source, target_location, 1)
                 elif rel == "parent":
                     # Link is a parent link. Path to parent via self link.
                     link["href"] = output_self.rsplit("/", 2)[0]
