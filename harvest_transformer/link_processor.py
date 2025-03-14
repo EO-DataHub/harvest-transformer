@@ -15,7 +15,7 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    spdx_license_path = "api/catalogue/licences/spdx/"
+    spdx_license_path = os.getenv("SPDX_LICENCE_PATH")
     spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
     def __init__(self, workspace: str):
@@ -24,7 +24,7 @@ class LinkProcessor:
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
-            bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
+            bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "/html/"
         )
         # Initialize S3 client
         self.s3_client = boto3.client("s3")
@@ -35,7 +35,11 @@ class LinkProcessor:
         s3 = boto3.client("s3")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
-
+        if "Contents" not in response or response.get("KeyCount", 0) == 0:
+            logging.warning(
+                f"No HTML license files found in {bucket_name} with prefix {prefix}html/"
+            )
+            return {}
         files = {
             obj["Key"]
             .split("/")[-1]
