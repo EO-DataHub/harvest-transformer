@@ -15,7 +15,6 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    spdx_license_path = "api/catalogue/licences/spdx/"
     spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
     def __init__(self, workspace: str):
@@ -23,8 +22,12 @@ class LinkProcessor:
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
+        self.spdx_licence_path = os.getenv(
+            "SPDX_LICENCE_PATH", "api/catalogue/stac/licences/spdx"
+        ).rstrip("/")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
-            bucket_name=self.spdx_bucket_name, prefix=self.spdx_license_path + "html/"
+            bucket_name=self.spdx_bucket_name,
+            prefix=f"{self.spdx_licence_path}/html",
         )
         # Initialize S3 client
         self.s3_client = boto3.client("s3")
@@ -35,7 +38,9 @@ class LinkProcessor:
         s3 = boto3.client("s3")
         # List objects within the specified prefix
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
-
+        if "Contents" not in response:
+            logging.warning(f"No HTML license files found in {bucket_name} with prefix {prefix}")
+            return {}
         files = {
             obj["Key"]
             .split("/")[-1]
@@ -173,7 +178,7 @@ class LinkProcessor:
         # Check whether license field is a valid SPDX ID
         found_license = self.spdx_license_dict.get(license_field.casefold())
         if found_license:
-            base_url = f"https://{self.hosted_zone}/{self.spdx_license_path}"
+            base_url = f"https://{self.hosted_zone}/{self.spdx_licence_path}"
 
             text_url = urljoin(base_url + "/text/", f"{found_license}.txt")
             html_url = urljoin(base_url + "/html/", f"{found_license}.html")
