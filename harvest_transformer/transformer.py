@@ -196,8 +196,8 @@ def transform(
     target_location = urljoin(output_root, target)
 
     # Update catalog ID if necessary
-    if isinstance(entry_body, dict):
-        entry_body = update_catalog_id(entry_body, target)
+    # if isinstance(entry_body, dict):
+    #     entry_body = update_catalog_id(entry_body, target)
 
     # Define list of processors
     processors = [WorkflowProcessor(), LinkProcessor(workspace), RenderProcessor()]
