@@ -73,7 +73,8 @@ dependencies = [
     "requests",
     "html-sanitizer",
     "jsonpatch",
-    "eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5"
+    "click",
+    "eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.6"
 ]
 
 # List additional groups of dependencies here (e.g. development

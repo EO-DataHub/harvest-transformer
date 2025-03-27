@@ -1,12 +1,25 @@
-import logging
 import os
+import random
 
-from eodhp_utils.runner import get_boto3_session, get_pulsar_client, run
+import click
+from eodhp_utils.runner import (
+    get_boto3_session,
+    get_pulsar_client,
+    log_component_version,
+    run,
+    setup_logging,
+)
 
 from .transformer_messager import TransformerMessager
 
 
-def main():
+@click.command
+@click.option("-v", "--verbose", count=True)
+@click.option("-t", "--threads", type=int, default=1)
+def main(verbose: int, threads: int):
+    setup_logging(verbosity=verbose)
+    log_component_version("harvest_transformer")
+
     # Configure S3 client
     s3_client = get_boto3_session().client("s3")
 
@@ -20,11 +33,9 @@ def main():
 
     producer = pulsar_client.create_producer(
         topic=f"transformed{identifier}",
-        producer_name=f"transformer{identifier}",
+        producer_name=f"transformer{identifier}-{random.randint(0, 100000)}",
         chunking_enabled=True,
     )
-
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
     destination_bucket = os.environ.get("S3_BUCKET")
 
@@ -38,7 +49,7 @@ def main():
     run(
         {f"harvested{identifier}": transformer_messager},
         subscription_name=f"transformer{identifier}",
-        threads=10,
+        threads=threads,
     )
 
 
