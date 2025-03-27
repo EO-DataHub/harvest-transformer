@@ -10,11 +10,11 @@ attrs==25.3.0
     #   referencing
 beautifulsoup4==4.13.3
     # via html-sanitizer
-boto3==1.37.19
+boto3==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
-botocore==1.37.19
+botocore==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   boto3
@@ -64,7 +64,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 requests==2.32.3
     # via Harvest-Transformer (pyproject.toml)
-rpds-py==0.23.1
+rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
@@ -74,7 +74,7 @@ six==1.17.0
     # via python-dateutil
 soupsieve==2.6
     # via beautifulsoup4
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   beautifulsoup4
     #   referencing

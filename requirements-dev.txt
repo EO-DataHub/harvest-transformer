@@ -12,12 +12,12 @@ beautifulsoup4==4.13.3
     # via html-sanitizer
 black==25.1.0
     # via Harvest-Transformer (pyproject.toml)
-boto3==1.37.19
+boto3==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
     #   moto
-botocore==1.37.19
+botocore==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   boto3
@@ -151,7 +151,7 @@ requests==2.32.3
     #   responses
 responses==0.25.7
     # via moto
-rpds-py==0.23.1
+rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
@@ -165,7 +165,7 @@ soupsieve==2.6
     # via beautifulsoup4
 trove-classifiers==2025.3.19.19
     # via validate-pyproject
-typing-extensions==4.12.2
+typing-extensions==4.13.0
     # via
     #   beautifulsoup4
     #   referencing
