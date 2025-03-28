@@ -1,5 +1,5 @@
 import os
-import random
+import uuid
 
 import click
 from eodhp_utils.runner import (
@@ -28,12 +28,14 @@ def main(verbose: int, threads: int):
     else:
         identifier = ""
 
+    producer_id = os.getenv("PRODUCER_UNIQUE_SUFFIX", str(uuid.uuid4()))
+
     # Initiate Pulsar
     pulsar_client = get_pulsar_client()
 
     producer = pulsar_client.create_producer(
         topic=f"transformed{identifier}",
-        producer_name=f"transformer{identifier}-{random.randint(0, 100000)}",
+        producer_name=f"transformer{identifier}-{producer_id}",
         chunking_enabled=True,
     )
 
