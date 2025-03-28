@@ -38,16 +38,19 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via
+    #   Harvest-Transformer (pyproject.toml)
     #   black
     #   pip-tools
 cryptography==44.0.2
     # via moto
 distlib==0.3.9
     # via virtualenv
-eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5
+eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.6
     # via Harvest-Transformer (pyproject.toml)
 execnet==2.1.1
     # via pytest-xdist
+faker==37.1.0
+    # via eodhp-utils
 fastjsonschema==2.21.1
     # via validate-pyproject
 filelock==3.18.0
@@ -169,6 +172,8 @@ typing-extensions==4.13.0
     # via
     #   beautifulsoup4
     #   referencing
+tzdata==2025.2
+    # via faker
 urllib3==2.3.0
     # via
     #   botocore

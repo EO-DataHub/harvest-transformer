@@ -1,12 +1,12 @@
 .PHONY: dockerbuild dockerpush test testonce ruff black lint isort pre-commit-check requirements-update requirements setup
 VERSION ?= latest
 IMAGENAME = harvest-transformer
-DOCKERREPO ?= public.ecr.aws/n1b3o1k2
+DOCKERREPO ?= public.ecr.aws/eodh
 
 dockerbuild:
 	DOCKER_BUILDKIT=1 docker build -t ${IMAGENAME}:${VERSION} .
 
-dockerpush: dockerbuild testdocker
+dockerpush: dockerbuild
 	docker tag ${IMAGENAME}:${VERSION} ${DOCKERREPO}/${IMAGENAME}:${VERSION}
 	docker push ${DOCKERREPO}/${IMAGENAME}:${VERSION}
 
@@ -43,8 +43,8 @@ requirements-update: venv
 	./venv/bin/pip-compile --extra dev -o requirements-dev.txt -U
 
 venv:
-	virtualenv -p python3.12 venv
-	./venv/bin/python -m ensurepip -U
+	# You may need: sudo apt install python3.12-dev python3.12-venv
+	python3.12 -m venv venv --upgrade-deps
 	./venv/bin/pip3 install pip-tools
 
 .make-venv-installed: venv requirements.txt requirements-dev.txt
@@ -57,3 +57,6 @@ venv:
 
 setup: venv requirements .make-venv-installed .git/hooks/pre-commit
 
+restart-k8s:
+	kubectl rollout -n rc restart deployment/transform-catalogue-data
+	kubectl rollout -n rc restart deployment/transform-catalogue-data-stac
