@@ -14,7 +14,7 @@
 
 [project]
 name = "Harvest-Transformer"
-version = "0.1.11"
+dynamic = ["version"]
 description = "Transform files recently updated by harvesters to be suitable for use in the EODH catalogue"
 readme = "README.md"
 
@@ -118,8 +118,12 @@ changelog = "https://github.com/UKEODHP/harvest-transformer/blob/main/CHANGELOG.
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=69.0.0", "wheel"]
+requires = ["setuptools>=69.0.0", "wheel", "setuptools-git-versioning>=2.0,<3"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
+
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
