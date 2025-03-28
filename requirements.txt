@@ -4,29 +4,31 @@
 #
 #    pip-compile
 #
-attrs==24.2.0
-    # via jsonschema
-beautifulsoup4==4.12.3
+attrs==25.3.0
+    # via
+    #   jsonschema
+    #   referencing
+beautifulsoup4==4.13.3
     # via html-sanitizer
-boto3==1.35.36
+boto3==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
-botocore==1.35.36
+botocore==1.37.21
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   boto3
     #   eodhp-utils
     #   s3transfer
-certifi==2024.8.30
+certifi==2025.1.31
     # via
     #   pulsar-client
     #   requests
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
     # via requests
 eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.5
     # via Harvest-Transformer (pyproject.toml)
-html-sanitizer==2.4.4
+html-sanitizer==2.5.0
     # via Harvest-Transformer (pyproject.toml)
 idna==3.10
     # via requests
@@ -38,38 +40,45 @@ jsonpatch==1.33
     # via Harvest-Transformer (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==3.2.0
+jsonschema==4.23.0
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
-lxml==5.3.0
+jsonschema-specifications==2024.10.1
+    # via jsonschema
+lxml==5.3.1
     # via
     #   html-sanitizer
     #   lxml-html-clean
 lxml-html-clean==0.4.1
     # via html-sanitizer
-pulsar-client==3.5.0
+pulsar-client==3.6.1
     # via eodhp-utils
-pyrsistent==0.20.0
-    # via jsonschema
 python-dateutil==2.9.0.post0
     # via botocore
 pyyaml==6.0.2
     # via Harvest-Transformer (pyproject.toml)
-requests==2.32.3
-    # via Harvest-Transformer (pyproject.toml)
-s3transfer==0.10.3
-    # via boto3
-six==1.16.0
+referencing==0.36.2
     # via
     #   jsonschema
-    #   python-dateutil
+    #   jsonschema-specifications
+requests==2.32.3
+    # via Harvest-Transformer (pyproject.toml)
+rpds-py==0.24.0
+    # via
+    #   jsonschema
+    #   referencing
+s3transfer==0.11.4
+    # via boto3
+six==1.17.0
+    # via python-dateutil
 soupsieve==2.6
     # via beautifulsoup4
-urllib3==2.2.3
+typing-extensions==4.13.0
+    # via
+    #   beautifulsoup4
+    #   referencing
+urllib3==2.3.0
     # via
     #   botocore
     #   requests
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
