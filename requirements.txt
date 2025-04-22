@@ -8,13 +8,13 @@ attrs==25.3.0
     # via
     #   jsonschema
     #   referencing
-beautifulsoup4==4.13.3
+beautifulsoup4==4.13.4
     # via html-sanitizer
-boto3==1.37.21
+boto3==1.37.38
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   eodhp-utils
-botocore==1.37.21
+botocore==1.37.38
     # via
     #   Harvest-Transformer (pyproject.toml)
     #   boto3
@@ -28,7 +28,11 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via Harvest-Transformer (pyproject.toml)
-eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.6
+deprecated==1.2.18
+    # via
+    #   opentelemetry-api
+    #   opentelemetry-semantic-conventions
+eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.8
     # via Harvest-Transformer (pyproject.toml)
 faker==37.1.0
     # via eodhp-utils
@@ -36,6 +40,8 @@ html-sanitizer==2.5.0
     # via Harvest-Transformer (pyproject.toml)
 idna==3.10
     # via requests
+importlib-metadata==8.6.1
+    # via opentelemetry-api
 jmespath==1.0.1
     # via
     #   boto3
@@ -50,16 +56,42 @@ jsonschema==4.23.0
     #   eodhp-utils
 jsonschema-specifications==2024.10.1
     # via jsonschema
-lxml==5.3.1
+lxml==5.3.2
     # via
     #   html-sanitizer
     #   lxml-html-clean
-lxml-html-clean==0.4.1
+lxml-html-clean==0.4.2
     # via html-sanitizer
+opentelemetry-api==1.32.1
+    # via
+    #   eodhp-utils
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-logging
+    #   opentelemetry-processor-baggage
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
+opentelemetry-instrumentation==0.53b1
+    # via opentelemetry-instrumentation-logging
+opentelemetry-instrumentation-logging==0.53b1
+    # via eodhp-utils
+opentelemetry-processor-baggage==0.53b1
+    # via eodhp-utils
+opentelemetry-sdk==1.32.1
+    # via
+    #   eodhp-utils
+    #   opentelemetry-processor-baggage
+opentelemetry-semantic-conventions==0.53b1
+    # via
+    #   opentelemetry-instrumentation
+    #   opentelemetry-sdk
+packaging==25.0
+    # via opentelemetry-instrumentation
 pulsar-client==3.6.1
     # via eodhp-utils
 python-dateutil==2.9.0.post0
     # via botocore
+python-json-logger==3.3.0
+    # via eodhp-utils
 pyyaml==6.0.2
     # via Harvest-Transformer (pyproject.toml)
 referencing==0.36.2
@@ -72,19 +104,27 @@ rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.11.4
+s3transfer==0.11.5
     # via boto3
 six==1.17.0
     # via python-dateutil
-soupsieve==2.6
+soupsieve==2.7
     # via beautifulsoup4
-typing-extensions==4.13.0
+typing-extensions==4.13.2
     # via
     #   beautifulsoup4
+    #   opentelemetry-sdk
     #   referencing
 tzdata==2025.2
     # via faker
-urllib3==2.3.0
+urllib3==2.4.0
     # via
     #   botocore
     #   requests
+wrapt==1.17.2
+    # via
+    #   deprecated
+    #   opentelemetry-instrumentation
+    #   opentelemetry-processor-baggage
+zipp==3.21.0
+    # via importlib-metadata
