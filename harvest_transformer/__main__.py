@@ -35,7 +35,7 @@ def main(verbose: int, threads: int):
 
     producer = pulsar_client.create_producer(
         topic=f"transformed{identifier}",
-        producer_name=f"transformer{identifier}-{producer_id}",
+        producer_name=f"transformer{identifier}-{producer_id}-{str(uuid.uuid4())}",
         chunking_enabled=True,
     )
 
