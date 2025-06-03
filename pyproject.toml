@@ -57,7 +57,7 @@ dependencies = [
     "html-sanitizer",
     "jsonpatch",
     "click",
-    "eodhp-utils @ git+https://github.com/UKEODHP/eodhp-utils@v0.1.8"
+    "eodhp-utils @ git+https://github.com/EO-DataHub/eodhp-utils@v0.1.8"
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -94,9 +94,9 @@ dev = [
 # maintainers, and where to support the project financially. The key is
 # what's used to render the link text on PyPI.
 [project.urls]  # Optional
-homepage = "https://github.com/UKEODHP/"
-repository = "https://github.com/UKEODHP/harvest-transformer"
-changelog = "https://github.com/UKEODHP/harvest-transformer/blob/main/CHANGELOG.md"
+homepage = "https://github.com/EO-DataHub/"
+repository = "https://github.com/EO-DataHub/harvest-transformer"
+changelog = "https://github.com/EO-DataHub/harvest-transformer/blob/main/CHANGELOG.md"
 
 [build-system]
 # These are the assumed default build requirements from pip:
