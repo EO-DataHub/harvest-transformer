@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.1.18 (28-03-2025)
+
+- Command line options:
+  - Add threading via the `-t` option
+  - Set the verbosity of logging with `-v`
+
+## v0.1.17 (21-03-2025)
+
+- General upkeep
+  - Prevent catalog_id from being updated for root catalogs, as this caused issues with internal harvests as IDs should be retained through transforms
+  - Updates to handling of spdx license links to avoid errors
+
+## v0.1.16 (07-03-2025)
+
+- Use paths provided by harvesters
+
+## v0.1.15 (18-02-2025)
+
+- Quality of life code improvements
+  - Remove conformance links from transformed links
+  - Update license copy error handling to avoid throwing errors
+
+## v0.1.14 (10-02-2025)
+
+- Bugfixes and Code Improvements
+  - Bump eodhp-utils version to address issues with S3 access timing
+  - Added a patch mechanism to merge collections with patches as defined in a given S3 bucket
+  - Override the method in the CatalogueChangeMessager class to ensure it supplies the correct bucket for bucket transactions.
+  - Only need to update catalog_id for valid JSON files, parsed as dicts
+
+## v0.1.13 (17-01-2025)
+
+- Add bucket argument to Update File request to avoid use of default bucket in the Messager
+
+## v0.1.12 (16-12-2024)
+
+- Refactor to use eodhp-utils Messager Framework
+  - Updated code to use Messager Framework defined in eodhp-utils
+  - Updated tests to use same framework
+  - Remove Pulsar dependency in tests
+
 ## v0.1.11 (09-10-2024)
 
 - Update error handling for invalid links
