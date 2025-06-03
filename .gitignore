@@ -133,3 +133,7 @@ venv
 
 # IDE
 .vscode
+
+# Development tools
+.make-venv-installed
+.pre-commit-config.yaml
