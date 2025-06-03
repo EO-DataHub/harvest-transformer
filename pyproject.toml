@@ -8,9 +8,6 @@ requires-python = ">=3.12"
 
 license = {file = "LICENSE"}
 
-# This should be your name or the name of the organization who originally
-# authored the project, and a valid email address corresponding to the name
-# listed.
 authors = [
   {name = "Telespazio UK Ltd", email = "alex.palmer@telespazio.com" },
   {name = "Telespazio UK Ltd", email = "thomas.jellicoe@telespazio.com" }
@@ -29,7 +26,7 @@ classifiers = [
   #   3 - Alpha
   #   4 - Beta
   #   5 - Production/Stable
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
 
   # Indicate who your project is intended for
   "Intended Audience :: Science/Research",
