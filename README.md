@@ -121,7 +121,7 @@ Run the transformer from the command line:
 
 ## Development
 
-- Code is in `harvest_transformer`.
+- Code is in the `harvest_transformer` directory.
 - Formatting: [Black](https://black.readthedocs.io/), [Ruff](https://docs.astral.sh/ruff/), [isort](https://pycqa.github.io/isort/).
 - Linting: [Pylint](https://pylint.pycqa.org/).
 - Pre-commit checks are installed with `make setup`.
