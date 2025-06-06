@@ -1,62 +1,183 @@
-# harvest-transformer
+# Harvest Transformer
 
-A service to transform harvested metadata. This has the following responsibilities:
+The Harvest Transformer is a service for transforming harvested SpatioTemporal Asset Catalog (STAC) metadata to make it suitable for the EODHP (Earth Observation Data Hub Platform) catalogue.
 
-- Await pulsar messages from the "harvested" topic, listing files ready for transform.
-- Update file contents to refer to a output_url given as a command line argument, and target provided in the incoming message.
-- Remove file contents that are not needed in the EODHP system.
-- Generate/complete STAC Collection definitions for workflows, including scraping of CWL script, if provided, to complete blank fields
-- Upload transformed files to S3 under a transformed prefix.
-- Send a pulsar message to the "transformed" topic, listing the transformed files.
+It is designed to operate as part of a data pipeline, reading messages from Apache Pulsar to discover new or updated STAC files, processing and transforming their contents, and storing the results in S3. After transformation, it sends messages back to Pulsar to notify downstream services of the new or updated catalogue entries.
 
-## Installation
+The service rewrites internal links, manages licenses, and prepares data for seamless integration into the EODHP system.
 
-1. Follow the instructions [here](https://github.com/UKEODHP/template-python/blob/main/README.md) for installing a
-   Python 3.11 environment.
-2. Install dependencies:
+## Features
 
-```commandline
+- **STAC Link Rewriting:** Ensures all STAC links (`self`, `parent`, `root`, `collection`, etc.) are rewritten to point to the new catalogue location.
+- **License Handling:** Maps SPDX license codes to filenames and ensures license links are present and correct.
+- **Workflow Support:** Automatically completes STAC Collection definitions for workflow collections, scraping CWL scripts for metadata where available.
+- **Patch Support:** Supports patching collections using JSON patches stored in S3.
+- **Extensible Processing:** Modular processor classes for link, workflow, and render transformations.
+- **Testing:** Comprehensive test suite using `pytest`.
+
+## Getting Started
+
+### Prerequisites
+
+Ensure you have a Python 3.12 environment available.
+
+### Setup
+
+Clone the repository and run the setup using the Makefile:
+
+```sh
+git clone https://github.com/EO-Datahub/harvest-transformer.git
+cd harvest-transformer
 make setup
 ```
 
-This will create a virtual environment called `venv`, build `requirements.txt` and
-`requirements-dev.txt` from `pyproject.toml` if they're out of date, install the Python
-and Node dependencies and install `pre-commit`.
+This will:
+- Create a virtual environment (`venv`)
+- Build  and install requirements from `pyproject.toml`
+- Install pre-commit hooks
 
-It's safe and fast to run `make setup` repeatedly as it will only update these things if
-they have changed.
+You can safely run `make setup` repeatedly; it will only update things if needed.
 
-After `make setup` you can run `pre-commit` to run pre-commit checks on staged changes and
-`pre-commit run --all-files` to run them on all files. This replicates the linter checks that
-run from GitHub actions.
+## Configuration
 
-3. Set up environment variables
+The Harvest Transformer is configured through environment variables, command-line options and incoming Pulsar messages.
 
-```commandline
-export PULSAR_URL=<pulsar_url>
-export AWS_ACCESS_KEY=<aws_access_key>
-export AWS_SECRET_ACCESS_KEY=<aws_secret_access_key>
+### Command-line options
+
+- `-v`, `--verbose`: Increase logging verbosity (can be repeated).
+- `-t`, `--threads`: Number of threads to use (default: 1).
+
+### Environment Variables
+
+- `PULSAR_URL`: The connection URL for the Apache Pulsar broker. Used to receive and send messages about catalogue updates.
+- `AWS_ACCESS_KEY`: Your AWS access key ID, required for accessing S3 buckets.
+- `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key, required for accessing S3 buckets.
+- `S3_BUCKET`: The name of the S3 bucket where transformed files will be stored.
+- `OUTPUT_ROOT`: The base URL that will be used for rewriting STAC links in the transformed metadata.
+- `PATCH_BUCKET` (optional): The S3 bucket containing JSON patches to apply to collections. If not set, defaults to `S3_BUCKET`.
+- `PATCH_PREFIX` (optional): The prefix (folder path) within the patch bucket where patches are stored. Defaults to `patches`.
+- `S3_SPDX_BUCKET` (optional): The S3 bucket containing SPDX license files for license link rewriting.
+- `SPDX_LICENCE_PATH` (optional): The path within the SPDX bucket where license files are stored.
+- `HOSTED_ZONE` (optional): The DNS hosted zone for output URLs, if custom domain management is required.
+
+
+## Pulsar Messages
+
+### Incoming Pulsar Messages (`harvested` topic)
+
+The service listens for messages on the `harvested` topic. Each message is a JSON object with the following structure:
+
+```json
+{
+  "id": "<unique_id>",
+  "workspace": "<workspace_name>",
+  "bucket_name": "<source_s3_bucket>",
+  "source": "<source_url_prefix>",
+  "target": "<target_url_prefix>",
+  "updated_keys": ["<list/of/keys/to/process>"],
+  "deleted_keys": ["<list/of/keys/to/delete>"],
+  "added_keys": ["<list/of/keys/to/add>"]
+}
 ```
 
-4. Run the service
+- `id`: Unique identifier for the harvest event.
+- `workspace`: Name of the workspace the data will be ingested into.
+- `bucket_name`: S3 bucket where harvested files are stored.
+- `source`: The original root URL of the harvested catalogue.
+- `target`: The new root URL for the transformed catalogue.
+- `updated_keys`, `deleted_keys`, `added_keys`: Lists of S3 keys for files that have been updated, deleted, or added.
 
-```commandline
-./venv/bin/python -m harvest_transformer <output_url>
+### Outgoing Pulsar Messages (`transformed` topic)
+
+After processing, the service sends a message to the `transformed` topic. The outgoing message has a similar structure, but refers to the transformed files:
+
+```json
+{
+  "id": "<unique_id>",
+  "workspace": "<workspace_name>",
+  "bucket_name": "<destination_s3_bucket>",
+  "source": "<source_url_prefix>",
+  "target": "<target_url_prefix>",
+  "updated_keys": ["<list/of/transformed/keys>"],
+  "deleted_keys": ["<list/of/deleted/keys>"],
+  "added_keys": ["<list/of/newly/added/keys>"]
+}
 ```
 
-## Building and testing
+- `bucket_name`: S3 bucket where transformed files are stored (may be different from the source).
+- `updated_keys`, `deleted_keys`, `added_keys`: Refer to the transformed, deleted, or added files in the output catalogue.
 
-This component uses `pytest` tests and the `ruff` and `black` linters. `black` will reformat your code in an
-opinionated way.
+**Note:** The service may also send "empty" catalogue change messages (with no updated, deleted, or added keys) to indicate a successful transformation with no file changes.
 
-A number of `make` targets are defined:
+## Usage
 
-- `make setup`: ensure requirements.txt is up-to-date and set up or update a dev environment (safe to run repeatedly)
-- `make test`: run tests continuously
-- `make testonce`: run tests once
-- `make lint`: lint and reformat
-- `make requirements`: Update requirements.txt and requirements-dev.txt from pyproject.toml
-- `make requirements-update`: Like `make requirements` but uses `-U` to update to the latest allowed version of everything
-- `make dockerbuild`: build a `latest` Docker image (use `make dockerbuild `VERSION=1.2.3` for a release image)
-- `make dockerpush`: push a `latest` Docker image (again, you can add `VERSION=1.2.3`) - normally this should be done
-  only via the build system and its GitHub actions.
+The service is typically run as part of a data pipeline, but you can invoke it directly for testing or development.
+
+Run the transformer from the command line:
+
+```sh
+./venv/bin/python -m harvest_transformer -t 10 -vv
+```
+
+## Development
+
+- Code is in the `harvest_transformer` directory.
+- Formatting: [Black](https://black.readthedocs.io/), [Ruff](https://docs.astral.sh/ruff/), [isort](https://pycqa.github.io/isort/).
+- Linting: [Pylint](https://pylint.pycqa.org/).
+- Pre-commit checks are installed with `make setup`.
+
+Useful Makefile targets:
+
+- `make setup`: Set up or update the dev environment.
+- `make test`: Run tests continuously.
+- `make testonce`: Run tests once.
+- `make lint`: Run all linters and formatters.
+- `make requirements`: Update requirements files from `pyproject.toml`.
+- `make requirements-update`: Update to the latest allowed versions.
+- `make dockerbuild`: Build a Docker image.
+- `make dockerpush`: Push a Docker image.
+
+### Project Structure
+
+- **link_processor.py**: Handles STAC link rewriting and license link management.
+- **workflow_processor.py**: Handles workflow-specific STAC transformations, including CWL scraping.
+- **render_processor.py**: Enables the STAC render extension for specified collections.
+- **transformer.py**: Main transformation logic, patching, and orchestration.
+- **transformer_messager.py**: Handles Pulsar messaging and S3 interactions.
+- **utils.py**: Utility functions.
+
+## Testing
+
+Run all tests with:
+
+```sh
+make testonce
+```
+
+Tests use [pytest](https://docs.pytest.org/), [moto](https://github.com/spulec/moto) for AWS mocking, and [requests-mock](https://requests-mock.readthedocs.io/).
+
+## Troubleshooting
+
+- **Authentication errors:** Ensure your `AWS_ACCESS_KEY` and `AWS_SECRET_ACCESS_KEY` are set correctly and have permission to access the required S3 buckets.
+- **Pulsar connection issues:** Check that `PULSAR_URL` is set to the correct broker address and is reachable from your environment.
+- **S3 upload or download failures:** Verify that `S3_BUCKET` (and any other relevant buckets like `PATCH_BUCKET` or `S3_SPDX_BUCKET`) exist, your credentials have the correct permissions, and the bucket region matches your configuration.
+
+Check the application logs for detailed error messages.
+
+## Release Process
+
+The release process is fully automated and handled through GitHub Actions.  
+On every push to `main` or when a new tag is created, the following checks and steps are run automatically:
+
+- Pre-commit checks and linting
+- Security scanning
+- Unit tests
+- Docker image build and push to the configured registry
+
+Versioned releases are handled through the Releases page in github.
+
+See [`.github/workflows/actions.yaml`](.github/workflows/actions.yaml) for details.
+
+## License
+
+This project is licensed under the United Kingdom Research and Innovation BSD Licence. See [LICENSE](LICENSE) for details.
