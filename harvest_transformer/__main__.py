@@ -1,6 +1,7 @@
 import os
 import uuid
 
+import botocore
 import click
 from eodhp_utils.runner import (
     get_boto3_session,
@@ -24,8 +25,10 @@ def main(verbose: int, threads: int):
     setup_logging(verbosity=verbose)
     log_component_version("harvest-transformer")
 
-    # Configure S3 client
-    s3_client = get_boto3_session().client("s3")
+    # Configure S3 client.
+    s3_client = get_boto3_session().client(
+        "s3", config=botocore.client.Config(max_pool_connections=min(threads, 10))
+    )
 
     if os.getenv("TOPIC"):
         identifier = "_" + os.getenv("TOPIC")
