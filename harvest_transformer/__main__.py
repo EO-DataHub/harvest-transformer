@@ -27,7 +27,7 @@ def main(verbose: int, threads: int):
 
     # Configure S3 client.
     s3_client = get_boto3_session().client(
-        "s3", config=botocore.client.Config(max_pool_connections=min(threads, 10))
+        "s3", config=botocore.client.Config(max_pool_connections=max(threads * 2, 10))
     )
 
     if os.getenv("TOPIC"):
@@ -49,7 +49,7 @@ def main(verbose: int, threads: int):
     destination_bucket = os.environ.get("S3_BUCKET")
 
     transformer_messager = TransformerMessager(
-        processors=[WorkflowProcessor(), LinkProcessor(), RenderProcessor()],
+        processors=[WorkflowProcessor(), LinkProcessor(s3_client=s3_client), RenderProcessor()],
         s3_client=s3_client,
         output_bucket=destination_bucket,
         cat_output_prefix="transformed/",

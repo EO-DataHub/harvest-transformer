@@ -95,6 +95,7 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
         target="test-catalog/",
         output_root="https://test-url-root.org.uk",
         workspace="test-workspace",
+        s3_client=mock_s3_client,
     )
 
     assert result == [expected_action]

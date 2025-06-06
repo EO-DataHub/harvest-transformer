@@ -29,6 +29,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
             target=target,
             output_root=output_root,
             workspace=workspace_from_msg,
+            s3_client=self.s3_client,
         )
         updated_key = transform_key(cat_path, source, target)
         return [

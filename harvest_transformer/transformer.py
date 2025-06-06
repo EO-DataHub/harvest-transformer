@@ -4,27 +4,9 @@ import os
 from typing import Union
 from urllib.parse import urljoin, urlparse
 
-import boto3
 import botocore
 import botocore.exceptions
 import jsonpatch
-
-# configure boto3 logging
-logging.getLogger("botocore").setLevel(logging.CRITICAL)
-logging.getLogger("boto3").setLevel(logging.CRITICAL)
-
-# configure urllib logging
-logging.getLogger("urllib3").setLevel(logging.CRITICAL)
-
-if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
-    session = boto3.session.Session(
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-    )
-    s3_client = session.client("s3")
-else:
-    s3_client = boto3.client("s3")
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def reformat_key(key: str) -> str:
@@ -134,7 +116,7 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
-def get_patch(cat_path: str) -> Union[dict, None]:
+def get_patch(s3_client, cat_path: str) -> Union[dict, None]:
     """
     Check if a patch exists for a given collection inside the patches/ folder in S3.
     """
@@ -178,6 +160,7 @@ def transform(
     target: str,
     output_root: str,
     workspace: str,
+    s3_client,
 ):
     """Load file from given key as JSON and update by applying list of processors"""
 
@@ -185,7 +168,7 @@ def transform(
 
     # Check for a patch and apply it
     if isinstance(entry_body, dict) and entry_body.get("type") == "Collection":
-        patch_data = get_patch(file_name)
+        patch_data = get_patch(s3_client, file_name)
 
         # If patch data exists, apply it to entry_body
         if patch_data:
