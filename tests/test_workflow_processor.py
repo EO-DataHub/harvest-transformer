@@ -16,8 +16,7 @@ with patch(
     "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
 ) as mock_map_licence_codes_to_filenames:
     mock_map_licence_codes_to_filenames.return_value = {}
-    workspace = "mock_workspace"
-    PROCESSORS = [WorkflowProcessor(), LinkProcessor("workspace")]
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
 def test_workflows_with_only_cwl_input_valid():
@@ -37,6 +36,7 @@ def test_workflows_with_only_cwl_input_valid():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -67,6 +67,7 @@ def test_workflows_with_only_cwl_input_invalid():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
+        workspace="test",
     )
     # Read output in as a dictionary
     output_json = json.loads(output)
@@ -107,6 +108,7 @@ def test_workflows_dont_overwrite():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -133,6 +135,7 @@ def test_workflows_fill_blanks():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
+        workspace="test",
     )
     # Read output in as a dictionary
     output_json = json.loads(output)
@@ -161,6 +164,7 @@ def test_workflows_correct_self_link():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=workflow_processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -190,6 +194,7 @@ def test_workflows_and_links_with_new_self_link():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
+        workspace="test",
     )
     # Read output in as a dictionary
     output_json = json.loads(output)
@@ -220,6 +225,7 @@ def test_workflows_and_links_with_only_cwl_input_valid():
         entry_body=file_json,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
+        workspace="test",
     )
 
     # Read output in as a dictionary

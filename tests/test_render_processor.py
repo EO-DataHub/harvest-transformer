@@ -97,6 +97,7 @@ def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
         entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -141,6 +142,7 @@ def test_sentinel2_ard_collection__missing_fields(
         entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -180,6 +182,7 @@ def test_not_sentinel2_ard_collection(key, value, mock_sentinel_collection, mock
         entry_body=mock_sentinel_collection,
         output_root=OUTPUT_ROOT,
         processors=processor,
+        workspace="test",
     )
 
     # Read output in as a dictionary

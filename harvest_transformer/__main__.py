@@ -10,6 +10,10 @@ from eodhp_utils.runner import (
     setup_logging,
 )
 
+from harvest_transformer.link_processor import LinkProcessor
+from harvest_transformer.render_processor import RenderProcessor
+from harvest_transformer.workflow_processor import WorkflowProcessor
+
 from .transformer_messager import TransformerMessager
 
 
@@ -42,6 +46,7 @@ def main(verbose: int, threads: int):
     destination_bucket = os.environ.get("S3_BUCKET")
 
     transformer_messager = TransformerMessager(
+        processors=[WorkflowProcessor(), LinkProcessor(), RenderProcessor()],
         s3_client=s3_client,
         output_bucket=destination_bucket,
         cat_output_prefix="transformed/",

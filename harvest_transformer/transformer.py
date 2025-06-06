@@ -9,10 +9,6 @@ import botocore
 import botocore.exceptions
 import jsonpatch
 
-from .link_processor import LinkProcessor
-from .render_processor import RenderProcessor
-from .workflow_processor import WorkflowProcessor
-
 # configure boto3 logging
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
 logging.getLogger("boto3").setLevel(logging.CRITICAL)
@@ -83,6 +79,7 @@ def update_file(
     entry_body: Union[dict, str],
     output_root: str,
     processors: list,
+    workspace: str,
 ) -> str:
     """
     Updates content within a given file name. File name is an S3 key.
@@ -96,6 +93,7 @@ def update_file(
             target_location=target_location,
             entry_body=entry_body,
             output_root=output_root,
+            workspace=workspace,
         )
 
     # Convert json to string for file upload
@@ -173,6 +171,7 @@ def apply_patch(original: dict, patch: list) -> dict:
 
 
 def transform(
+    processors,
     file_name: str,
     entry_body: Union[dict, str],
     source: str,
@@ -198,11 +197,14 @@ def transform(
     # Update catalog ID if necessary
     # if isinstance(entry_body, dict):
     #     entry_body = update_catalog_id(entry_body, target)
-
-    # Define list of processors
-    processors = [WorkflowProcessor(), LinkProcessor(workspace), RenderProcessor()]
     entry_body = update_file(
-        file_name, source, target_location, entry_body, output_root, processors
+        file_name,
+        source,
+        target_location,
+        entry_body,
+        output_root,
+        processors,
+        workspace,
     )
 
     return entry_body
