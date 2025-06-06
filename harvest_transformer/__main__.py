@@ -35,7 +35,7 @@ def main(verbose: int, threads: int):
     producer_id = os.getenv("PRODUCER_UNIQUE_SUFFIX", str(uuid.uuid4()))
 
     # Initiate Pulsar
-    pulsar_client = get_pulsar_client()
+    pulsar_client = get_pulsar_client(message_listener_threads=threads)
 
     producer = pulsar_client.create_producer(
         topic=f"transformed{identifier}",
