@@ -22,7 +22,7 @@ from .transformer_messager import TransformerMessager
 @click.option("-t", "--threads", type=int, default=1)
 def main(verbose: int, threads: int):
     setup_logging(verbosity=verbose)
-    log_component_version("harvest_transformer")
+    log_component_version("harvest-transformer")
 
     # Configure S3 client
     s3_client = get_boto3_session().client("s3")
