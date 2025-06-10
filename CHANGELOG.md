@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.19 (10-06-2025)
+
+- Make better use of threading support
+  - Use eodhp-utils with fixed threading support
+  - Increase the requests connection pool used for talking to S3
+  - Don't list the licence bucket on every message
+- Update the licence and README
+
 ## v0.1.18 (28-03-2025)
 
 - Command line options:
