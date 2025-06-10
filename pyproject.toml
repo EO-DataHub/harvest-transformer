@@ -54,7 +54,7 @@ dependencies = [
     "html-sanitizer",
     "jsonpatch",
     "click",
-    "eodhp-utils @ git+https://github.com/EO-DataHub/eodhp-utils@multithreading-not-using-multi-threads"
+    "eodhp-utils @ git+https://github.com/EO-DataHub/eodhp-utils@v0.1.12"
 ]
 
 # List additional groups of dependencies here (e.g. development
