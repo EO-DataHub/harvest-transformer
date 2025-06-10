@@ -13,6 +13,6 @@ def test_get_file_from_url_fail():
 
 
 def test_get_file_from_url_pass():
-    url = "https://test.eodatahub.org.uk/api/catalogue/stac/"
+    url = "https://example.com/"
     body = get_file_from_url(url)
     assert body is not None

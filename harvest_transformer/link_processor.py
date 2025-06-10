@@ -17,27 +17,24 @@ workflow_stac_processor = WorkflowProcessor()
 class LinkProcessor:
     spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
 
-    def __init__(self, workspace: str):
-        self.workspace = workspace
+    def __init__(self, s3_client=None):
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
         self.spdx_licence_path = os.getenv(
             "SPDX_LICENCE_PATH", "api/catalogue/stac/licences/spdx"
         ).rstrip("/")
+        self.s3_client = s3_client or boto3.client("s3")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name,
             prefix=f"{self.spdx_licence_path}/html",
         )
         # Initialize S3 client
-        self.s3_client = boto3.client("s3")
         self.sanitizer = Sanitizer()
 
     def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
-        # Initialize an S3 client
-        s3 = boto3.client("s3")
         # List objects within the specified prefix
-        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
+        response = self.s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
         if "Contents" not in response:
             logging.warning(f"No HTML license files found in {bucket_name} with prefix {prefix}")
             return {}
@@ -168,7 +165,7 @@ class LinkProcessor:
         link_type = "text/plain" if href.endswith(".txt") else "text/html"
         links.append({"rel": "license", "href": href, "type": link_type})
 
-    def ensure_license_links(self, stac_data: dict):
+    def ensure_license_links(self, workspace, stac_data: dict):
         """Ensure that valid SPDX license links are present."""
         links = stac_data.get("links", [])
         # Check whether license field is provided
@@ -194,7 +191,7 @@ class LinkProcessor:
                     href = link.get("href")
                     if not href.startswith(f"https://{self.hosted_zone}"):
                         # Copy the license file to EODH public bucket and update the link
-                        new_href = self.copy_license_to_eodh(href)
+                        new_href = self.copy_license_to_eodh(workspace, href)
                         link["href"] = new_href
 
     def update_file(
@@ -204,6 +201,7 @@ class LinkProcessor:
         target_location: str,
         entry_body: Union[dict, str],
         output_root: str,
+        workspace: str,
         **kwargs,
     ) -> dict:
         """
@@ -243,7 +241,7 @@ class LinkProcessor:
         entry_body = self.add_missing_links(entry_body, output_root, output_self)
 
         # Ensure SPDX license links are present
-        self.ensure_license_links(entry_body)
+        self.ensure_license_links(workspace, entry_body)
 
         # Update links to refer to EODH
         entry_body = self.rewrite_links(
@@ -253,7 +251,7 @@ class LinkProcessor:
         # Return json for further transform and upload
         return entry_body
 
-    def copy_license_to_eodh(self, href: str) -> str:
+    def copy_license_to_eodh(self, workspace, href: str) -> str:
         """Copy the license file to the EODH public bucket and return the new URL."""
         # Download the license file
         try:
@@ -277,7 +275,7 @@ class LinkProcessor:
 
         # Determine the new filename and path
         filename = href.split("/")[-1]
-        new_path = f"api/catalogue/licences/{self.workspace}/{filename}"
+        new_path = f"api/catalogue/licences/{workspace}/{filename}"
 
         # Check if the file already exists in the bucket
         try:

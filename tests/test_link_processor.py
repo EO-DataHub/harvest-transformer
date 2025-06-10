@@ -18,8 +18,7 @@ with patch(
     "harvest_transformer.link_processor.LinkProcessor.map_licence_codes_to_filenames"
 ) as mock_map_licence_codes_to_filenames:
     mock_map_licence_codes_to_filenames.return_value = {}
-    worspace = "mock_workspace"
-    PROCESSORS = [WorkflowProcessor(), LinkProcessor(worspace)]
+    PROCESSORS = [WorkflowProcessor(), LinkProcessor()]
 
 
 # Define the fixture
@@ -38,15 +37,14 @@ def link_processor_fixture(mocker):
                 "SPDX_LICENCE_PATH": "api/catalogue/stac/licences/spdx/",
             },
         )
-        workspace = "mock_workspace"
-        processor = LinkProcessor(workspace)
+        processor = LinkProcessor()
         yield processor
 
 
 def test_links_replacement_only(link_processor_fixture):
     # Configure mocks
     workspace = "mock_workspace"
-    link_processor = [LinkProcessor(workspace)]
+    link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -61,6 +59,7 @@ def test_links_replacement_only(link_processor_fixture):
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
+        workspace=workspace,
     )
 
     # Read output in as a dictionary
@@ -107,7 +106,7 @@ def test_links_replacement_only(link_processor_fixture):
 def test_links_add_missing_links(link_processor_fixture):
     # Configure mocks
     workspace = "mock_workspace"
-    link_processor = [LinkProcessor(workspace)]
+    link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -122,6 +121,7 @@ def test_links_add_missing_links(link_processor_fixture):
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
+        workspace=workspace,
     )
 
     # Read output in as a dictionary
@@ -143,7 +143,7 @@ def test_links_add_missing_links(link_processor_fixture):
 def test_links_remove_unkown_links(link_processor_fixture):
     """Test that unkown hrefs are removed, catalog hrefs are updated, and external links are unchanged"""
     workspace = "mock_workspace"
-    link_processor = [LinkProcessor(workspace)]
+    link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_remove_unknown_links.json"
     # Load test STAC data
     with open(stac_location, "r") as file:
@@ -158,6 +158,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
+        workspace=workspace,
     )
 
     # Read output in as a dictionary
@@ -222,6 +223,7 @@ def test_workflow_does_not_alter_non_workflows():
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
+        workspace="test",
     )
 
     # Read output in as a dictionary
@@ -267,8 +269,7 @@ def test_workflow_does_not_alter_non_workflows():
 
 def test_add_new_license_link(link_processor_fixture):
     json_data = {"links": []}
-    workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     processor.spdx_license_list = {"apl-1.0": "APL-1.0"}
     processor.add_license_link(
         json_data,
@@ -285,10 +286,10 @@ def test_add_new_license_link(link_processor_fixture):
 
 def test_add_new_license_link_from_id(link_processor_fixture):
     workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {"links": [], "license": "AAL"}
-    processor.ensure_license_links(json_data)
+    processor.ensure_license_links(workspace, json_data)
     assert json_data["links"] == [
         {
             "rel": "license",
@@ -305,7 +306,7 @@ def test_add_new_license_link_from_id(link_processor_fixture):
 
 def test_dont_add_license_link_when_present(link_processor_fixture):
     workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     processor.spdx_license_list = {"aal": "AAL"}
     json_data = {
         "links": [
@@ -315,7 +316,7 @@ def test_dont_add_license_link_when_present(link_processor_fixture):
             }
         ]
     }
-    processor.ensure_license_links(json_data)
+    processor.ensure_license_links(workspace, json_data)
     assert json_data == {
         "links": [
             {
@@ -327,8 +328,7 @@ def test_dont_add_license_link_when_present(link_processor_fixture):
 
 
 def test_add_multiple_license_links(link_processor_fixture):
-    workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     processor.spdx_license_list = {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
     json_data = {
         "links": [
@@ -359,7 +359,7 @@ def test_add_multiple_license_links(link_processor_fixture):
 
 def test_add_license_link_to_existing_links(link_processor_fixture):
     workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     processor.spdx_license_dict = {"aal": "AAL"}
     json_data = {
         "license": "aal",
@@ -368,7 +368,7 @@ def test_add_license_link_to_existing_links(link_processor_fixture):
             {"rel": "parent", "href": "https://example.com/parent"},
         ],
     }
-    processor.ensure_license_links(json_data)
+    processor.ensure_license_links(workspace, json_data)
     assert json_data["links"] == [
         {"rel": "self", "href": "https://example.com/self"},
         {"rel": "parent", "href": "https://example.com/parent"},
@@ -387,7 +387,7 @@ def test_add_license_link_to_existing_links(link_processor_fixture):
 
 def test_add_license_link_unknown_license_id(link_processor_fixture):
     workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     json_data = {
         "license": "proprietary",
         "links": [
@@ -396,6 +396,7 @@ def test_add_license_link_unknown_license_id(link_processor_fixture):
         ],
     }
     processor.ensure_license_links(
+        workspace,
         json_data,
     )
     assert json_data["links"] == [
@@ -415,7 +416,6 @@ def test_map_licence_codes_to_filenames(mock_boto3_client):
         ]
     }
     mock_boto3_client.return_value = mock_s3_client
-    workspace = "mock_workspace"
-    processor = LinkProcessor(workspace)
+    processor = LinkProcessor()
     result = processor.map_licence_codes_to_filenames("SPDX_BUCKET", "prefix")
     assert result == {"aal": "AAL", "apsl-1.2": "APSL-1.2"}

@@ -60,3 +60,4 @@ setup: venv requirements .make-venv-installed .git/hooks/pre-commit
 restart-k8s:
 	kubectl rollout -n rc restart deployment/transform-catalogue-data
 	kubectl rollout -n rc restart deployment/transform-catalogue-data-stac
+	kubectl rollout -n rc restart deployment/transform-catalogue-data-bulk

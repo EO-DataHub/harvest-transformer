@@ -31,6 +31,7 @@ def test_process_update(mock_process_update_body):
         ]
 
         test_transformer_messager = TransformerMessager(
+            processors=[],
             s3_client=s3,
             output_bucket="files_bucket_name",
             cat_output_prefix="transformed",
@@ -67,6 +68,7 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     mock_transform.return_value = stac_item
     mock_get_workspace_from_msg.return_value = "test-workspace"
     test_transformer_messager = TransformerMessager(
+        processors=[],
         s3_client=mock_s3_client,
         output_bucket="files_bucket_name",
         cat_output_prefix="transformed",
@@ -86,12 +88,14 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     )
 
     mock_transform.assert_called_once_with(
+        processors=[],
         file_name="test/key/path.json",
         entry_body=stac_item,
         source="test/",
         target="test-catalog/",
         output_root="https://test-url-root.org.uk",
         workspace="test-workspace",
+        s3_client=mock_s3_client,
     )
 
     assert result == [expected_action]
@@ -107,6 +111,7 @@ def test_process_delete(mock_transform, mock_get_workspace_from_msg):
     mock_transform.return_value = stac_item
     mock_get_workspace_from_msg.get.return_value = "test-workspace"
     test_transformer_messager = TransformerMessager(
+        processors=[],
         s3_client=mock_s3_client,
         output_bucket="files_bucket_name",
         cat_output_prefix="transformed",
