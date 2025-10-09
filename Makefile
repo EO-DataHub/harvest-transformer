@@ -17,7 +17,7 @@ testonce:
 	./venv/bin/pytest
 
 ruff:
-	./venv/bin/ruff check .
+	./venv/bin/ruff check --fix .
 
 black:
 	./venv/bin/black .

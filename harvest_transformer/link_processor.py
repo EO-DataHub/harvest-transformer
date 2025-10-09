@@ -61,9 +61,28 @@ class LinkProcessor:
         """Checks if a given URL is valid"""
         try:
             result = urlparse(url)
-            return all([result.scheme, result.netloc])
+            if all(
+                [
+                    result.scheme in ("http", "https"),  # Ensure scheme is http or https
+                    bool(result.netloc),  # Ensure network location is present
+                    all(result.path.split("/")[1:-1]),  # Ensure path segments are not empty,
+                    # ignoring 0 index, as it will always be "/"
+                ]
+            ):
+                return True
+            return False
         except ValueError:
             return False
+
+    def replace_url_location(self, url: str, source: str, target: str) -> str:
+        """Replace the source part of a URL with the target part."""
+        if not self.is_valid_url(target):
+            raise ValueError(f"Provided target url {target} is not a valid URL")
+        if not source.endswith("/"):
+            target = target.rstrip("/")
+        if url.startswith(source):
+            return url.replace(source, target, 1)
+        raise ValueError(f"URL {url} does not start with source {source}")
 
     def delete_sections(self, stac_data: dict) -> dict:
         """Remove all unnecessary data from a file."""
@@ -115,7 +134,7 @@ class LinkProcessor:
                 if href.startswith(source):
                     # Link is an absolute link. Replace the source.
                     if target_location not in href:
-                        link["href"] = href.replace(source, target_location, 1)
+                        link["href"] = self.replace_url_location(href, source, target_location)
                 elif rel == "parent":
                     # Link is a parent link. Path to parent via self link.
                     link["href"] = output_self.rsplit("/", 2)[0]
@@ -148,16 +167,16 @@ class LinkProcessor:
 
     def add_link_if_missing(self, stac_data: dict, rel: str, href: str):
         """Ensures a link consisting of given rel exists in links."""
-        links = stac_data.get("links")
-        link_exists = False
-        if not links:
-            stac_data.update({"links": [{"rel": rel, "href": href}]})
-            return
-        for link in links:
-            if link.get("rel") == rel:
-                link_exists = True
-        if not link_exists:
-            links.append({"rel": rel, "href": href})
+        if not self.is_valid_url(href):
+            raise ValueError(f"Provided href {href} is not a valid URL")
+        new_link = {"rel": rel, "href": href}
+        if "links" not in stac_data.keys():
+            stac_data.update({"links": [new_link]})
+        else:
+            current_link = [link for link in stac_data["links"] if link.get("rel") == rel]
+            if not current_link:
+                stac_data["links"].append(new_link)
+        return
 
     def add_license_link(self, stac_data: dict, href: str):
         """Ensures unique license links, overwriting if already present."""
@@ -223,14 +242,16 @@ class LinkProcessor:
             logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
-            self.add_link_if_missing(entry_body, "self", source + file_name)
+            self.add_link_if_missing(entry_body, "self", urljoin(source, file_name))
             self_link = [
                 link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
 
-        output_self = self_link.replace(source, target_location, 1)
+        # output_self = self_link.replace(source, target_location, 1)
+        output_self = self.replace_url_location(self_link, source, target_location)
         if not self.is_valid_url(output_self):
             logging.error(
+                f"Failed: {output_self} is not a valid URL."
                 f"File {file_name} does not produce a valid self link with given "
                 f"self link {self_link}, source {source}, and target {target_location}. "
                 f"Unable to rewrite links."
