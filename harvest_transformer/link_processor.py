@@ -167,8 +167,6 @@ class LinkProcessor:
 
     def add_link_if_missing(self, stac_data: dict, rel: str, href: str):
         """Ensures a link consisting of given rel exists in links."""
-        if not self.is_valid_url(href):
-            raise ValueError(f"Provided href {href} is not a valid URL")
         new_link = {"rel": rel, "href": href}
         if "links" not in stac_data.keys():
             stac_data.update({"links": [new_link]})
@@ -239,7 +237,10 @@ class LinkProcessor:
                 link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
         except (TypeError, IndexError):
-            logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
+            logging.info(
+                f"File {file_name}, with source {source} and target {target_location},"
+                f"does not contain a self link. Adding temporary link."
+            )
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
             self.add_link_if_missing(entry_body, "self", urljoin(source, file_name))
