@@ -87,13 +87,11 @@ class LinkProcessor:
         Replace the source part of a URL with the target part.
         The source part can be any substring of the url.
         """
-        if not self.is_valid_url(target):
-            raise ValueError(f"Provided target url {target} is not a valid URL")
-        if not source.endswith("/"):
-            target = target.rstrip("/")
-        if url.startswith(source):
-            return url.replace(source, target, 1)
-        # raise ValueError(f"URL {url} does not start with source {source}")
+        # If source is empty, the url is assumed to be relative
+        if not source:
+            return urljoin(target, url)
+        # Strip the right most slash from source and target to avoid double slashes, or no slashes.
+        return url.replace(source.rstrip("/"), target.rstrip("/"), 1)
 
     def delete_sections(self, stac_data: dict) -> dict:
         """Remove all unnecessary data from a file."""
@@ -238,11 +236,11 @@ class LinkProcessor:
         """
 
         logging.info(
-            f"file_name: {file_name}"
-            f"source: {source}"
-            f"target_location: {target_location}"
-            f"entry_body: {entry_body}"
-            f"output_root: {output_root}"
+            f"file_name: {file_name}, "
+            f"source: {source}, "
+            f"target_location: {target_location}, "
+            f"entry_body: {entry_body}, "
+            f"output_root: {output_root}, "
             f"workspace: {workspace}"
         )
 
@@ -258,7 +256,7 @@ class LinkProcessor:
             ][0]
         except (TypeError, IndexError):
             logging.info(
-                f"File {file_name}, with source {source} and target {target_location},"
+                f"File {file_name}, with source: {source} and target: {target_location},"
                 f"does not contain a self link. Adding temporary link."
             )
             # Create temporary self link in item using source which will be replaced by the subsequent
@@ -268,7 +266,6 @@ class LinkProcessor:
                 link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
 
-        # output_self = self_link.replace(source, target_location, 1)
         output_self = self.replace_url_location(self_link, source, target_location)
         if not self.is_valid_url(output_self):
             logging.error(
