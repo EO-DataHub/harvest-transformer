@@ -75,14 +75,17 @@ class LinkProcessor:
             return False
 
     def replace_url_location(self, url: str, source: str, target: str) -> str:
-        """Replace the source part of a URL with the target part."""
+        """
+        Replace the source part of a URL with the target part.
+        The source part can be any substring of the url.
+        """
         if not self.is_valid_url(target):
             raise ValueError(f"Provided target url {target} is not a valid URL")
         if not source.endswith("/"):
             target = target.rstrip("/")
         if url.startswith(source):
             return url.replace(source, target, 1)
-        raise ValueError(f"URL {url} does not start with source {source}")
+        # raise ValueError(f"URL {url} does not start with source {source}")
 
     def delete_sections(self, stac_data: dict) -> dict:
         """Remove all unnecessary data from a file."""
@@ -225,6 +228,15 @@ class LinkProcessor:
         Updates content within a given file name. File name may either be a URL or S3 key.
         Uploads updated file contents to updated_key within the given bucket.
         """
+
+        logging.debug(
+            f"file_name: {file_name}"
+            f"source: {source}"
+            f"target_location: {target_location}"
+            f"entry_body: {entry_body}"
+            f"output_root: {output_root}"
+            f"workspace: {workspace}"
+        )
 
         # Only concerned with STAC data here, other files can be uploaded as is
         if not isinstance(entry_body, dict):
