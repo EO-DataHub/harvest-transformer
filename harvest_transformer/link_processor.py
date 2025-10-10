@@ -65,14 +65,22 @@ class LinkProcessor:
                 [
                     result.scheme in ("http", "https"),  # Ensure scheme is http or https
                     bool(result.netloc),  # Ensure network location is present
-                    all(result.path.split("/")[1:-1]),  # Ensure path segments are not empty,
-                    # ignoring 0 index, as it will always be "/"
+                    self.is_valid_path(result.path),  # Ensure path is valid
                 ]
             ):
                 return True
             return False
         except ValueError:
             return False
+
+    def is_valid_path(self, path: str) -> bool:
+        """Checks if a given url path, is valid"""
+        if path or path == "/":
+            return True
+        else:
+            # Ensure path segments are not empty, ie. no double slashes
+            # ignoring 0 index, as it will always be "/"
+            return all(path.split("/")[1:-1])
 
     def replace_url_location(self, url: str, source: str, target: str) -> str:
         """
@@ -229,7 +237,7 @@ class LinkProcessor:
         Uploads updated file contents to updated_key within the given bucket.
         """
 
-        logging.debug(
+        logging.info(
             f"file_name: {file_name}"
             f"source: {source}"
             f"target_location: {target_location}"
