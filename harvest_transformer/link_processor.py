@@ -61,9 +61,37 @@ class LinkProcessor:
         """Checks if a given URL is valid"""
         try:
             result = urlparse(url)
-            return all([result.scheme, result.netloc])
+            if all(
+                [
+                    result.scheme in ("http", "https"),  # Ensure scheme is http or https
+                    bool(result.netloc),  # Ensure network location is present
+                    self.is_valid_path(result.path),  # Ensure path is valid
+                ]
+            ):
+                return True
+            return False
         except ValueError:
             return False
+
+    def is_valid_path(self, path: str) -> bool:
+        """Checks if a given url path, is valid"""
+        if path or path == "/":
+            return True
+        else:
+            # Ensure path segments are not empty, ie. no double slashes
+            # ignoring 0 index, as it will always be "/"
+            return all(path.split("/")[1:-1])
+
+    def replace_url_location(self, url: str, source: str, target: str) -> str:
+        """
+        Replace the source part of a URL with the target part.
+        The source part can be any substring of the url.
+        """
+        # If source is empty, the url is assumed to be relative
+        if not source:
+            return urljoin(target, url)
+        # Strip the right most slash from source and target to avoid double slashes, or no slashes.
+        return url.replace(source.rstrip("/"), target.rstrip("/"), 1)
 
     def delete_sections(self, stac_data: dict) -> dict:
         """Remove all unnecessary data from a file."""
@@ -115,7 +143,7 @@ class LinkProcessor:
                 if href.startswith(source):
                     # Link is an absolute link. Replace the source.
                     if target_location not in href:
-                        link["href"] = href.replace(source, target_location, 1)
+                        link["href"] = self.replace_url_location(href, source, target_location)
                 elif rel == "parent":
                     # Link is a parent link. Path to parent via self link.
                     link["href"] = output_self.rsplit("/", 2)[0]
@@ -148,16 +176,14 @@ class LinkProcessor:
 
     def add_link_if_missing(self, stac_data: dict, rel: str, href: str):
         """Ensures a link consisting of given rel exists in links."""
-        links = stac_data.get("links")
-        link_exists = False
-        if not links:
-            stac_data.update({"links": [{"rel": rel, "href": href}]})
-            return
-        for link in links:
-            if link.get("rel") == rel:
-                link_exists = True
-        if not link_exists:
-            links.append({"rel": rel, "href": href})
+        new_link = {"rel": rel, "href": href}
+        if "links" not in stac_data.keys():
+            stac_data.update({"links": [new_link]})
+        else:
+            current_link = [link for link in stac_data["links"] if link.get("rel") == rel]
+            if not current_link:
+                stac_data["links"].append(new_link)
+        return
 
     def add_license_link(self, stac_data: dict, href: str):
         """Ensures unique license links, overwriting if already present."""
@@ -209,6 +235,15 @@ class LinkProcessor:
         Uploads updated file contents to updated_key within the given bucket.
         """
 
+        logging.info(
+            f"file_name: {file_name}, "
+            f"source: {source}, "
+            f"target_location: {target_location}, "
+            f"entry_body: {entry_body}, "
+            f"output_root: {output_root}, "
+            f"workspace: {workspace}"
+        )
+
         # Only concerned with STAC data here, other files can be uploaded as is
         if not isinstance(entry_body, dict):
             return entry_body
@@ -220,17 +255,21 @@ class LinkProcessor:
                 link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
         except (TypeError, IndexError):
-            logging.info(f"File {file_name} does not contain a self link. Adding temporary link.")
+            logging.info(
+                f"File {file_name}, with source: {source} and target: {target_location},"
+                f"does not contain a self link. Adding temporary link."
+            )
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
-            self.add_link_if_missing(entry_body, "self", source + file_name)
+            self.add_link_if_missing(entry_body, "self", urljoin(source, file_name))
             self_link = [
                 link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
             ][0]
 
-        output_self = self_link.replace(source, target_location, 1)
+        output_self = self.replace_url_location(self_link, source, target_location)
         if not self.is_valid_url(output_self):
             logging.error(
+                f"Failed: {output_self} is not a valid URL."
                 f"File {file_name} does not produce a valid self link with given "
                 f"self link {self_link}, source {source}, and target {target_location}. "
                 f"Unable to rewrite links."

@@ -2,6 +2,7 @@ import copy
 import json
 import os
 from unittest.mock import Mock, patch
+from urllib.parse import urljoin
 
 import pytest
 
@@ -11,7 +12,7 @@ from harvest_transformer.workflow_processor import WorkflowProcessor
 
 SOURCE_PATH = "https://example.link.for.test/"
 TARGET = "/target_directory/"
-OUTPUT_ROOT = "https://output.root.test"
+OUTPUT_ROOT = "https://output.root.test/"
 
 # Ensure you update this list when other transformers are added
 with patch(
@@ -55,7 +56,7 @@ def test_links_replacement_only(link_processor_fixture):
     output = update_file(
         file_name=stac_location,
         source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
+        target_location=urljoin(OUTPUT_ROOT, TARGET),
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
@@ -117,7 +118,7 @@ def test_links_add_missing_links(link_processor_fixture):
     output = update_file(
         file_name=stac_location,
         source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
+        target_location=urljoin(OUTPUT_ROOT, TARGET),
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
@@ -128,7 +129,7 @@ def test_links_add_missing_links(link_processor_fixture):
     output_json = json.loads(output)
 
     expected_links = [
-        {"rel": "self", "href": f"{OUTPUT_ROOT}{TARGET}{stac_location}"},
+        {"rel": "self", "href": urljoin(urljoin(OUTPUT_ROOT, TARGET), stac_location)},
         {"rel": "root", "href": OUTPUT_ROOT},
     ]
 
@@ -154,7 +155,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
     output = update_file(
         file_name=stac_location,
         source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
+        target_location=urljoin(OUTPUT_ROOT, TARGET),
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=link_processor,
@@ -219,7 +220,7 @@ def test_workflow_does_not_alter_non_workflows():
     output = update_file(
         file_name=stac_location,
         source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
+        target_location=urljoin(OUTPUT_ROOT, TARGET),
         entry_body=json_data,
         output_root=OUTPUT_ROOT,
         processors=PROCESSORS,
