@@ -5,6 +5,7 @@
 - Bugfix to correct URL replacement logic:
   - Ensure that URLs are only replaced if they start with the source URL
   - Raise an error if the target URL is not valid
+  - Logic to avoid double slashes or no slashes.
 
 ## v0.1.19 (10-06-2025)
 
