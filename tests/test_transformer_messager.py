@@ -25,7 +25,7 @@ def test_process_update(mock_process_update_body):
         mock_producer = mock.MagicMock()
         mock_process_update_body.return_value = [
             Messager.OutputFileAction(
-                file_body=stac_item,
+                file_body=json.dumps(stac_item),
                 cat_path="test-catalog/key/path.json",
             )
         ]
@@ -46,13 +46,11 @@ def test_process_update(mock_process_update_body):
             "test-catalog/",
         )
 
-        mock_process_update_body.assert_called_once_with(
-            stac_item, "test/key/path.json", "test/", "test-catalog/"
-        )
+        mock_process_update_body.assert_called_once_with(stac_item, "test/key/path.json", "test/", "test-catalog/")
 
         assert result == [
             Messager.OutputFileAction(
-                file_body=stac_item,
+                file_body=json.dumps(stac_item),
                 cat_path="test-catalog/key/path.json",
             )
         ]
@@ -65,7 +63,7 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
     stac_item = {"id": "test-item"}
     mock_s3_client = mock.MagicMock()
     mock_producer = mock.MagicMock()
-    mock_transform.return_value = stac_item
+    mock_transform.return_value = json.dumps(stac_item)
     mock_get_workspace_from_msg.return_value = "test-workspace"
     test_transformer_messager = TransformerMessager(
         processors=[],
@@ -77,12 +75,10 @@ def test_process_update_body(mock_transform, mock_get_workspace_from_msg):
 
     test_transformer_messager.input_change_msg = {"bucket_name": "test-bucket"}
 
-    result = test_transformer_messager.process_update_body(
-        stac_item, "test/key/path.json", "test/", "test-catalog/"
-    )
+    result = test_transformer_messager.process_update_body(stac_item, "test/key/path.json", "test/", "test-catalog/")
 
     expected_action = Messager.OutputFileAction(
-        file_body=stac_item,
+        file_body=json.dumps(stac_item),
         cat_path="test-catalog/key/path.json",
         bucket="test-bucket",
     )

@@ -1,4 +1,5 @@
 import logging
+import urllib.error
 import urllib.request
 from urllib.request import urlopen
 

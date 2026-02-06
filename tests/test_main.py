@@ -2,7 +2,7 @@ import json
 import os
 from unittest import mock
 
-import botocore
+import botocore.exceptions
 
 from harvest_transformer.transformer import (
     apply_patch,
@@ -51,21 +51,13 @@ def test_reformat_key_catalog():
 def test_reformat_key_collection():
     key = "transformed/test-datasets/test-catalog/collections/test-collection"
     reformatted_key = reformat_key(key)
-    assert (
-        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection.json"
-    )
+    assert reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection.json"
 
 
-@mock.patch.dict(
-    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
-)
+@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"})
 def test_get_patch_found():
     # Mock the S3 response
-    mock_response = {
-        "Body": mock.Mock(
-            read=mock.Mock(return_value=json.dumps({"patch": "data"}).encode("utf-8"))
-        )
-    }
+    mock_response = {"Body": mock.Mock(read=mock.Mock(return_value=json.dumps({"patch": "data"}).encode("utf-8")))}
     mock_s3_client = mock.Mock()
     mock_s3_client.get_object.return_value = mock_response
 
@@ -81,9 +73,7 @@ def test_get_patch_found():
     )
 
 
-@mock.patch.dict(
-    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
-)
+@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"})
 def test_get_patch_not_found():
     # Mock the S3 ClientError for NoSuchKey
     mock_s3_client = mock.Mock()
@@ -102,9 +92,7 @@ def test_get_patch_not_found():
     )
 
 
-@mock.patch.dict(
-    os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"}
-)
+@mock.patch.dict(os.environ, {"PATCH_PREFIX": "patches", "PATCH_BUCKET": "catalogue-population-eodhp-dev"})
 def test_get_patch_unexpected_error():
     # Mock an unexpected error
     mock_s3_client = mock.Mock()
@@ -142,10 +130,7 @@ def test_apply_patch_failure():
 def test_reformat_key_item():
     key = "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item"
     reformatted_key = reformat_key(key)
-    assert (
-        reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection/"
-        "items/test-item.json"
-    )
+    assert reformatted_key == "transformed/test-datasets/test-catalog/collections/test-collection/items/test-item.json"
 
 
 def test_get_new_catalog_id_from_target():

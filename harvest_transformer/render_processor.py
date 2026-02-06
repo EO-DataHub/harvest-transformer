@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Union
+from typing import Any
 
 renderable_collections = {
     "sentinel2_ard": {
@@ -18,20 +20,17 @@ renderable_collections = {
 class RenderProcessor:
     def is_renderable(self, entry_body: dict) -> bool:
         """Check to see if file describes a collection that is renderable"""
-        return (
-            entry_body.get("type") == "Collection"
-            and entry_body.get("id") in renderable_collections.keys()
-        )
+        return entry_body.get("type") == "Collection" and entry_body.get("id") in renderable_collections
 
     def update_file(
         self,
         file_name: str,
         source: str,
         target_location: str,
-        entry_body: Union[dict, str],
+        entry_body: dict | str,
         output_root: str,
-        **kwargs,
-    ) -> dict:
+        **kwargs: Any,
+    ) -> dict | str:
         """
         Updates content within a given file name. File name may either be a URL or S3 key.
         Uploads updated file contents to updated_key within the given bucket.
@@ -50,7 +49,7 @@ class RenderProcessor:
             if render_extension_url not in entry_body["stac_extensions"]:
                 entry_body["stac_extensions"].append(render_extension_url)
 
-            entry_body["renders"] = renderable_collections[entry_body.get("id")]
+            entry_body["renders"] = renderable_collections[entry_body["id"]]
 
         # Return json for further transform and upload
         return entry_body

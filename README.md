@@ -19,21 +19,21 @@ The service rewrites internal links, manages licenses, and prepares data for sea
 
 ### Prerequisites
 
-Ensure you have a Python 3.12 environment available.
+- Python 3.13
+- [uv](https://docs.astral.sh/uv/)
 
 ### Setup
 
 Clone the repository and run the setup using the Makefile:
 
 ```sh
-git clone https://github.com/EO-Datahub/harvest-transformer.git
+git clone https://github.com/EO-DataHub/harvest-transformer.git
 cd harvest-transformer
 make setup
 ```
 
 This will:
-- Create a virtual environment (`venv`)
-- Build  and install requirements from `pyproject.toml`
+- Install dependencies via `uv sync`
 - Install pre-commit hooks
 
 You can safely run `make setup` repeatedly; it will only update things if needed.
@@ -116,24 +116,25 @@ The service is typically run as part of a data pipeline, but you can invoke it d
 Run the transformer from the command line:
 
 ```sh
-./venv/bin/python -m harvest_transformer -t 10 -vv
+uv run python -m harvest_transformer -t 10 -vv
 ```
 
 ## Development
 
 - Code is in the `harvest_transformer` directory.
-- Formatting: [Black](https://black.readthedocs.io/), [Ruff](https://docs.astral.sh/ruff/), [isort](https://pycqa.github.io/isort/).
-- Linting: [Pylint](https://pylint.pycqa.org/).
+- Formatting and linting: [Ruff](https://docs.astral.sh/ruff/).
+- Type checking: [Pyright](https://github.com/microsoft/pyright).
 - Pre-commit checks are installed with `make setup`.
 
 Useful Makefile targets:
 
 - `make setup`: Set up or update the dev environment.
-- `make test`: Run tests continuously.
+- `make test`: Run tests continuously with `pytest-watcher`.
 - `make testonce`: Run tests once.
-- `make lint`: Run all linters and formatters.
-- `make requirements`: Update requirements files from `pyproject.toml`.
-- `make requirements-update`: Update to the latest allowed versions.
+- `make check`: Run all linters, formatters, type checker, and validate pyproject.
+- `make format`: Auto-fix lint issues and format code.
+- `make install`: Install dependencies (frozen).
+- `make update`: Update dependencies.
 - `make dockerbuild`: Build a Docker image.
 - `make dockerpush`: Push a Docker image.
 
@@ -154,7 +155,7 @@ Run all tests with:
 make testonce
 ```
 
-Tests use [pytest](https://docs.pytest.org/), [moto](https://github.com/spulec/moto) for AWS mocking, and [requests-mock](https://requests-mock.readthedocs.io/).
+Tests use [pytest](https://docs.pytest.org/) and [moto](https://github.com/spulec/moto) for AWS mocking.
 
 ## Troubleshooting
 
@@ -166,10 +167,10 @@ Check the application logs for detailed error messages.
 
 ## Release Process
 
-The release process is fully automated and handled through GitHub Actions.  
+The release process is fully automated and handled through GitHub Actions.
 On every push to `main` or when a new tag is created, the following checks and steps are run automatically:
 
-- Pre-commit checks and linting
+- QA checks (linting, formatting, type checking)
 - Security scanning
 - Unit tests
 - Docker image build and push to the configured registry
