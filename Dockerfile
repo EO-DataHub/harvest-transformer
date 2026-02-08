@@ -4,7 +4,7 @@ FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
-    && apt-get install --yes --quiet --no-install-recommends git
+    && apt-get install --yes --quiet --no-install-recommends git g++
 
 ENV UV_NO_DEV=1
 
