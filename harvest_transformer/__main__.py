@@ -2,6 +2,7 @@ import os
 import uuid
 
 import botocore
+import botocore.client
 import click
 from eodhp_utils.runner import (
     get_boto3_session,
@@ -21,7 +22,7 @@ from .transformer_messager import TransformerMessager
 @click.command
 @click.option("-v", "--verbose", count=True)
 @click.option("-t", "--threads", type=int, default=1)
-def main(verbose: int, threads: int):
+def main(verbose: int, threads: int) -> None:
     setup_logging(verbosity=verbose)
     log_component_version("harvest-transformer")
 
@@ -31,7 +32,7 @@ def main(verbose: int, threads: int):
     )
 
     if os.getenv("TOPIC"):
-        identifier = "_" + os.getenv("TOPIC")
+        identifier = "_" + os.getenv("TOPIC", "")
     else:
         identifier = ""
 

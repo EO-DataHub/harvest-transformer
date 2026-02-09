@@ -48,7 +48,7 @@ def test_links_replacement_only(link_processor_fixture):
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
-    with open(stac_location, "r") as file:
+    with open(stac_location) as file:
         json_data = json.load(file)
         input_data = copy.deepcopy(json_data)
 
@@ -67,6 +67,10 @@ def test_links_replacement_only(link_processor_fixture):
     output_json = json.loads(output)
 
     # Construct expected output links
+    expect_self_link: dict = {}
+    expect_root_link: dict = {}
+    expect_parent_link: dict = {}
+    expect_collection_link: dict = {}
     for link in input_data["links"]:
         if link["rel"] == "self":
             expect_self_link = link
@@ -98,7 +102,7 @@ def test_links_replacement_only(link_processor_fixture):
 
     # Check other data is unchanged
     for key in output_json:
-        if not key == "links":
+        if key != "links":
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
@@ -110,7 +114,7 @@ def test_links_add_missing_links(link_processor_fixture):
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_add_missing_links.json"
     # Load test STAC data
-    with open(stac_location, "r") as file:
+    with open(stac_location) as file:
         json_data = json.load(file)
         input_data = copy.deepcopy(json_data)
 
@@ -135,7 +139,7 @@ def test_links_add_missing_links(link_processor_fixture):
 
     # Check other data is unchanged
     for key in output_json:
-        if not key == "links":
+        if key != "links":
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
@@ -147,7 +151,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
     link_processor = [LinkProcessor()]
     stac_location = "test_data/test_links_remove_unknown_links.json"
     # Load test STAC data
-    with open(stac_location, "r") as file:
+    with open(stac_location) as file:
         json_data = json.load(file)
         input_data = copy.deepcopy(json_data)
 
@@ -166,6 +170,12 @@ def test_links_remove_unkown_links(link_processor_fixture):
     output_json = json.loads(output)
 
     # Construct expected output links
+    expect_self_link: dict = {}
+    expect_root_link: dict = {}
+    expect_parent_link: dict = {}
+    expect_collection_link: dict = {}
+    expect_thumbnail_link: dict = {}
+    expect_license_link: dict = {}
     for link in input_data["links"]:
         if link["rel"] == "self":
             expect_self_link = link
@@ -203,7 +213,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
 
     # Check other data is unchanged
     for key in output_json:
-        if not key == "links":
+        if key != "links":
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
@@ -212,7 +222,7 @@ def test_links_remove_unkown_links(link_processor_fixture):
 def test_workflow_does_not_alter_non_workflows():
     stac_location = "test_data/test_links_replacement_only.json"
     # Load test STAC data
-    with open(stac_location, "r") as file:
+    with open(stac_location) as file:
         json_data = json.load(file)
         input_data = copy.deepcopy(json_data)
 
@@ -231,6 +241,10 @@ def test_workflow_does_not_alter_non_workflows():
     output_json = json.loads(output)
 
     # Construct expected output links
+    expect_self_link: dict = {}
+    expect_root_link: dict = {}
+    expect_parent_link: dict = {}
+    expect_collection_link: dict = {}
     for link in input_data["links"]:
         if link["rel"] == "self":
             expect_self_link = link
@@ -262,7 +276,7 @@ def test_workflow_does_not_alter_non_workflows():
 
     # Check other data is unchanged
     for key in output_json:
-        if not key == "links":
+        if key != "links":
             assert output_json[key] == input_data[key]
 
     assert output_json["links"] == expected_links
@@ -271,7 +285,6 @@ def test_workflow_does_not_alter_non_workflows():
 def test_add_new_license_link(link_processor_fixture):
     json_data = {"links": []}
     processor = LinkProcessor()
-    processor.spdx_license_list = {"apl-1.0": "APL-1.0"}
     processor.add_license_link(
         json_data,
         "https://dev.eodatahub.org.uk/harvested/default/spdx/license-list-data/main/text/APL-1.0.txt",
@@ -308,7 +321,6 @@ def test_add_new_license_link_from_id(link_processor_fixture):
 def test_dont_add_license_link_when_present(link_processor_fixture):
     workspace = "mock_workspace"
     processor = LinkProcessor()
-    processor.spdx_license_list = {"aal": "AAL"}
     json_data = {
         "links": [
             {
@@ -330,7 +342,6 @@ def test_dont_add_license_link_when_present(link_processor_fixture):
 
 def test_add_multiple_license_links(link_processor_fixture):
     processor = LinkProcessor()
-    processor.spdx_license_list = {"aal": "AAL", "apsl-1.2": "APSL-1.2"}
     json_data = {
         "links": [
             {

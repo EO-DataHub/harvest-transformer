@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
-from typing import Union
+from collections.abc import Generator
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import boto3
@@ -15,15 +18,12 @@ workflow_stac_processor = WorkflowProcessor()
 
 
 class LinkProcessor:
-    spdx_license_list = []  # This will be populated with the list of valid SPDX IDs
-
-    def __init__(self, s3_client=None):
+    def __init__(self, s3_client: Any = None) -> None:
+        self.spdx_license_list: list = []
         # Populate the SPDX_LICENSE_LIST with valid SPDX IDs
         self.hosted_zone = os.getenv("HOSTED_ZONE")
         self.spdx_bucket_name = os.getenv("S3_SPDX_BUCKET")
-        self.spdx_licence_path = os.getenv(
-            "SPDX_LICENCE_PATH", "api/catalogue/stac/licences/spdx"
-        ).rstrip("/")
+        self.spdx_licence_path = os.getenv("SPDX_LICENCE_PATH", "api/catalogue/stac/licences/spdx").rstrip("/")
         self.s3_client = s3_client or boto3.client("s3")
         self.spdx_license_dict = self.map_licence_codes_to_filenames(
             bucket_name=self.spdx_bucket_name,
@@ -32,19 +32,14 @@ class LinkProcessor:
         # Initialize S3 client
         self.sanitizer = Sanitizer()
 
-    def map_licence_codes_to_filenames(self, bucket_name, prefix) -> dict[str, str]:
+    def map_licence_codes_to_filenames(self, bucket_name: str | None, prefix: str) -> dict[str, str]:
         # List objects within the specified prefix
         response = self.s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=10000)
         if "Contents" not in response:
             logging.warning(f"No HTML license files found in {bucket_name} with prefix {prefix}")
             return {}
         files = {
-            obj["Key"]
-            .split("/")[-1]
-            .rsplit(".", 1)[0]
-            .casefold(): obj["Key"]
-            .split("/")[-1]
-            .rsplit(".", 1)[0]
+            obj["Key"].split("/")[-1].rsplit(".", 1)[0].casefold(): obj["Key"].split("/")[-1].rsplit(".", 1)[0]
             for obj in response.get("Contents", [])
             if obj.get("Key", "").endswith(".html")
         }
@@ -53,9 +48,7 @@ class LinkProcessor:
             return files
         else:
             logging.info(f"No html license files found in {bucket_name} with prefix {prefix}")
-            raise SPDXLicenseError(
-                f"No html license files found in {bucket_name} with prefix {prefix}"
-            )
+            raise SPDXLicenseError(f"No html license files found in {bucket_name} with prefix {prefix}")
 
     def is_valid_url(self, url: str) -> bool:
         """Checks if a given URL is valid"""
@@ -98,7 +91,7 @@ class LinkProcessor:
         stac_data.pop("conformsTo", None)
         return stac_data
 
-    def find_all_links(self, node):
+    def find_all_links(self, node: Any) -> Generator:
         """Recursively find all nested links in a given item"""
         if isinstance(node, list):
             for i in node:
@@ -174,10 +167,10 @@ class LinkProcessor:
 
         return stac_data
 
-    def add_link_if_missing(self, stac_data: dict, rel: str, href: str):
+    def add_link_if_missing(self, stac_data: dict, rel: str, href: str) -> None:
         """Ensures a link consisting of given rel exists in links."""
         new_link = {"rel": rel, "href": href}
-        if "links" not in stac_data.keys():
+        if "links" not in stac_data:
             stac_data.update({"links": [new_link]})
         else:
             current_link = [link for link in stac_data["links"] if link.get("rel") == rel]
@@ -185,13 +178,13 @@ class LinkProcessor:
                 stac_data["links"].append(new_link)
         return
 
-    def add_license_link(self, stac_data: dict, href: str):
+    def add_license_link(self, stac_data: dict, href: str) -> None:
         """Ensures unique license links, overwriting if already present."""
         links = stac_data.setdefault("links", [])
         link_type = "text/plain" if href.endswith(".txt") else "text/html"
         links.append({"rel": "license", "href": href, "type": link_type})
 
-    def ensure_license_links(self, workspace, stac_data: dict):
+    def ensure_license_links(self, workspace: str | None, stac_data: dict) -> None:
         """Ensure that valid SPDX license links are present."""
         links = stac_data.get("links", [])
         # Check whether license field is provided
@@ -225,11 +218,11 @@ class LinkProcessor:
         file_name: str,
         source: str,
         target_location: str,
-        entry_body: Union[dict, str],
+        entry_body: dict | str,
         output_root: str,
         workspace: str,
-        **kwargs,
-    ) -> dict:
+        **kwargs: Any,
+    ) -> dict | str:
         """
         Updates content within a given file name. File name may either be a URL or S3 key.
         Uploads updated file contents to updated_key within the given bucket.
@@ -251,10 +244,8 @@ class LinkProcessor:
         # Delete unnecessary sections
         entry_body = self.delete_sections(entry_body)
         try:
-            self_link = [
-                link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
-            ][0]
-        except (TypeError, IndexError):
+            self_link = next(link.get("href") for link in entry_body.get("links", []) if link.get("rel") == "self")
+        except (TypeError, StopIteration):
             logging.info(
                 f"File {file_name}, with source: {source} and target: {target_location},"
                 f"does not contain a self link. Adding temporary link."
@@ -262,9 +253,7 @@ class LinkProcessor:
             # Create temporary self link in item using source which will be replaced by the subsequent
             # transformer
             self.add_link_if_missing(entry_body, "self", urljoin(source, file_name))
-            self_link = [
-                link.get("href") for link in entry_body.get("links") if link.get("rel") == "self"
-            ][0]
+            self_link = next(link.get("href") for link in entry_body.get("links", []) if link.get("rel") == "self")
 
         output_self = self.replace_url_location(self_link, source, target_location)
         if not self.is_valid_url(output_self):
@@ -283,27 +272,21 @@ class LinkProcessor:
         self.ensure_license_links(workspace, entry_body)
 
         # Update links to refer to EODH
-        entry_body = self.rewrite_links(
-            entry_body, source, target_location, output_self, output_root
-        )
+        entry_body = self.rewrite_links(entry_body, source, target_location, output_self, output_root)
 
         # Return json for further transform and upload
         return entry_body
 
-    def copy_license_to_eodh(self, workspace, href: str) -> str:
+    def copy_license_to_eodh(self, workspace: str | None, href: str) -> str:
         """Copy the license file to the EODH public bucket and return the new URL."""
         # Download the license file
         try:
-            response = requests.get(
-                href, timeout=5
-            )  # only wait for 5 seconds to download the license
+            response = requests.get(href, timeout=5)  # only wait for 5 seconds to download the license
         except Exception as e:
             logging.error(f"Failed to download license file from {href}: {e}")
             return href
         if response.status_code != 200:
-            logging.error(
-                f"Failed to download license file from {href}, status code {response.status_code}"
-            )
+            logging.error(f"Failed to download license file from {href}, status code {response.status_code}")
             return href
 
         # Sanitize HTML if necessary
@@ -313,7 +296,7 @@ class LinkProcessor:
             content = self.sanitizer.sanitize(response.text).encode("utf-8")
 
         # Determine the new filename and path
-        filename = href.split("/")[-1]
+        filename = href.rsplit("/", maxsplit=1)[-1]
         new_path = f"api/catalogue/licences/{workspace}/{filename}"
 
         # Check if the file already exists in the bucket

@@ -25,7 +25,7 @@ def test_workflows_with_only_cwl_input_valid():
     stac_expected_location = "test_data/test_workflows_with_only_cwl_input_valid-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -43,7 +43,7 @@ def test_workflows_with_only_cwl_input_valid():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     # Check generated STAC is correct
@@ -56,7 +56,7 @@ def test_workflows_with_only_cwl_input_invalid():
     stac_expected_location = "test_data/test_workflows_with_only_cwl_input_invalid-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -73,7 +73,7 @@ def test_workflows_with_only_cwl_input_invalid():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     # Check generated stac is complete and sound
@@ -96,7 +96,7 @@ def test_workflows_dont_overwrite():
     stac_input_location = "test_data/test_workflows_dont_overwrite.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
         input_data = copy.deepcopy(file_json)
 
@@ -124,7 +124,7 @@ def test_workflows_fill_blanks():
     stac_expected_location = "test_data/test_workflows_fill_blanks-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -141,7 +141,7 @@ def test_workflows_fill_blanks():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     assert output_json == expected_json
@@ -153,7 +153,7 @@ def test_workflows_correct_self_link():
     stac_expected_location = "test_data/test_workflows_correct_self_link-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -171,7 +171,7 @@ def test_workflows_correct_self_link():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     # Check generated STAC is correct
@@ -183,7 +183,7 @@ def test_workflows_and_links_with_new_self_link():
     stac_expected_location = "test_data/test_workflows_and_links_with_new_self_link-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -200,7 +200,7 @@ def test_workflows_and_links_with_new_self_link():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     # Check generated STAC is correct
@@ -209,12 +209,10 @@ def test_workflows_and_links_with_new_self_link():
 
 def test_workflows_and_links_with_only_cwl_input_valid():
     stac_input_location = "test_data/test_workflows_with_only_cwl_input_valid.json"
-    stac_expected_location = (
-        "test_data/test_workflows_and_links_with_only_cwl_input_valid-expected.json"
-    )
+    stac_expected_location = "test_data/test_workflows_and_links_with_only_cwl_input_valid-expected.json"
 
     # Load test STAC data
-    with open(stac_input_location, "r") as file:
+    with open(stac_input_location) as file:
         file_json = json.load(file)
 
     # Execute update file process
@@ -232,7 +230,7 @@ def test_workflows_and_links_with_only_cwl_input_valid():
     output_json = json.loads(output)
 
     # Expected outputs
-    with open(stac_expected_location, "r") as file:
+    with open(stac_expected_location) as file:
         expected_json = json.load(file)
 
     # Check generated STAC is correct

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import json
 import logging
 import os
-from typing import Union
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import botocore
@@ -12,8 +14,7 @@ import jsonpatch
 def reformat_key(key: str) -> str:
     """Reformat key to remove trailing slashes and add file extension"""
 
-    if key.endswith("/"):
-        key = key[:-1]
+    key = key.removesuffix("/")
 
     if not key.endswith(".json"):
         key = key + ".json"
@@ -21,7 +22,7 @@ def reformat_key(key: str) -> str:
     return key
 
 
-def get_new_catalog_id_from_target(target: str) -> str:
+def get_new_catalog_id_from_target(target: str) -> str | None:
     """Extract catalog ID from target"""
     # Currently take catalog_id directly under top-level catalog,
     # as current harvested catalogs do not support nesting
@@ -35,9 +36,7 @@ def get_new_catalog_id_from_target(target: str) -> str:
 def transform_key(file_name: str, source: str, target: str) -> str:
     """Creates a key in a transformed subdirectory from a given file name"""
     transformed_key = (
-        file_name.replace("git-harvester/", "", 1)
-        .replace("file-harvester/", "", 1)
-        .replace("stac-harvester/", "", 1)
+        file_name.replace("git-harvester/", "", 1).replace("file-harvester/", "", 1).replace("stac-harvester/", "", 1)
     )
     if transformed_key == file_name:
         transformed_key = file_name.replace(source, target, 1)
@@ -58,10 +57,10 @@ def update_file(
     file_name: str,
     source: str,
     target_location: str,
-    entry_body: Union[dict, str],
+    entry_body: dict | str,
     output_root: str,
     processors: list,
-    workspace: str,
+    workspace: str | None,
 ) -> str:
     """
     Updates content within a given file name. File name is an S3 key.
@@ -116,7 +115,7 @@ def update_catalog_id(entry_body: dict, target: str) -> dict:
     return entry_body
 
 
-def get_patch(s3_client, cat_path: str) -> Union[dict, None]:
+def get_patch(s3_client: Any, cat_path: str) -> dict | None:
     """
     Check if a patch exists for a given collection inside the patches/ folder in S3.
     """
@@ -141,7 +140,7 @@ def get_patch(s3_client, cat_path: str) -> Union[dict, None]:
         return None
 
 
-def apply_patch(original: dict, patch: list) -> dict:
+def apply_patch(original: dict, patch: list | dict) -> dict:
     """Apply a JSON patch ensuring output remains a dictionary."""
     try:
         patch_obj = jsonpatch.JsonPatch(patch)
@@ -153,15 +152,15 @@ def apply_patch(original: dict, patch: list) -> dict:
 
 
 def transform(
-    processors,
+    processors: list,
     file_name: str,
-    entry_body: Union[dict, str],
+    entry_body: dict | str,
     source: str,
     target: str,
     output_root: str,
-    workspace: str,
-    s3_client,
-):
+    workspace: str | None,
+    s3_client: Any,
+) -> str:
     """Load file from given key as JSON and update by applying list of processors"""
 
     patch_data = None

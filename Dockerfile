@@ -1,23 +1,26 @@
-FROM python:3.12-slim-bullseye
+# syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
- 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update --yes --quiet \
-    && apt-get install --yes --quiet --no-install-recommends \
-    openssh-client \
-    procps \
-    git \
-    g++
+    apt-get update \
+    && apt-get install --yes --quiet --no-install-recommends git g++
 
-RUN --mount=type=cache,target=/root/.cache/pip python -m pip install --upgrade pip
+ENV UV_NO_DEV=1
 
-WORKDIR /harvest_transformer
-ADD LICENSE requirements.txt ./
-ADD harvest_transformer ./harvest_transformer/
-ADD pyproject.toml ./
-RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt .
- 
-ENTRYPOINT ["python", "-m", "harvest_transformer"]
+WORKDIR /app
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project
+
+# Copy project files
+COPY . /app
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
+
+ENTRYPOINT ["uv", "run", "--no-sync", "python", "-m", "harvest_transformer"]

@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 from eodhp_utils.messagers import (
     CatalogueChangeBodyMessager,
@@ -12,15 +15,15 @@ from .transformer import transform, transform_key
 
 
 class TransformerMessager(CatalogueChangeBodyMessager):
-    def __init__(self, processors, *args, **kwargs):
+    def __init__(self, processors: list, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.processors = processors
 
     def process_update_body(
-        self, entry_body: Union[dict, str], cat_path: str, source: str, target: str
+        self, entry_body: dict | str, cat_path: str, source: str, target: str
     ) -> Sequence[CatalogueChangeMessager.Action]:
         workspace_from_msg = self.get_workspace_from_msg()
-        output_root = os.getenv("OUTPUT_ROOT")
+        output_root = os.getenv("OUTPUT_ROOT", "")
         entry_body = transform(
             processors=self.processors,
             file_name=cat_path,
@@ -48,7 +51,7 @@ class TransformerMessager(CatalogueChangeBodyMessager):
         # Action to remove file from S3
         return [Messager.OutputFileAction(file_body=None, cat_path=updated_key)]
 
-    def get_workspace_from_msg(self):
+    def get_workspace_from_msg(self) -> str | None:
         return self.input_change_msg.get("workspace")
 
     def gen_empty_catalogue_message(self, msg: Message) -> dict:

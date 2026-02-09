@@ -25,11 +25,7 @@ def mock_sentinel_collection():
         "license": "sentinel",
         "providers": [],
         "extent": {
-            "spatial": {
-                "bbox": [
-                    [-9.00034454651177, 49.48562028352171, 3.1494256015866995, 61.33444247301668]
-                ]
-            },
+            "spatial": {"bbox": [[-9.00034454651177, 49.48562028352171, 3.1494256015866995, 61.33444247301668]]},
             "temporal": {"interval": [["2023-01-01T11:14:51.000Z", "2023-11-01T11:43:49.000Z"]]},
         },
         "summaries": {
@@ -57,7 +53,7 @@ def test_is_renderable_collection__success(mock_sentinel_collection):
 
 
 @pytest.mark.parametrize(
-    "key,value",
+    ("key", "value"),
     [
         pytest.param("type", "NotACollection", id="collection"),
         pytest.param("id", "not_sentinel2_ard", id="id"),
@@ -108,10 +104,7 @@ def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
         if key not in ["stac_extensions", "renders"]:
             assert output_json[key] == input_data[key]
 
-    assert (
-        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
-        in output_json["stac_extensions"]
-    )
+    assert "https://stac-extensions.github.io/render/v1.0.0/schema.json" in output_json["stac_extensions"]
     assert isinstance(output_json["renders"], dict)
 
 
@@ -122,9 +115,7 @@ def test_sentinel2_ard_collection(mock_sentinel_collection, mock_file_name):
         pytest.param(["items", "in", "list"], id="list"),
     ],
 )
-def test_sentinel2_ard_collection__missing_fields(
-    stac_extension, mock_sentinel_collection, mock_file_name
-):
+def test_sentinel2_ard_collection__missing_fields(stac_extension, mock_sentinel_collection, mock_file_name):
     processor = [RenderProcessor()]
 
     if stac_extension:
@@ -153,15 +144,12 @@ def test_sentinel2_ard_collection__missing_fields(
         if key not in ["stac_extensions", "renders"]:
             assert output_json[key] == input_data[key]
 
-    assert (
-        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
-        in output_json["stac_extensions"]
-    )
+    assert "https://stac-extensions.github.io/render/v1.0.0/schema.json" in output_json["stac_extensions"]
     assert isinstance(output_json["renders"], dict)
 
 
 @pytest.mark.parametrize(
-    "key,value",
+    ("key", "value"),
     [
         pytest.param("type", "NotACollection", id="collection"),
         pytest.param("id", "not_sentinel2_ard", id="id"),
@@ -194,8 +182,5 @@ def test_not_sentinel2_ard_collection(key, value, mock_sentinel_collection, mock
             assert output_json[key] == input_data[key]
 
     # Check renders fields not added
-    assert (
-        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
-        not in output_json["stac_extensions"]
-    )
-    assert "renders" not in output_json.keys()
+    assert "https://stac-extensions.github.io/render/v1.0.0/schema.json" not in output_json["stac_extensions"]
+    assert "renders" not in output_json
