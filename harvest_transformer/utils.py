@@ -1,6 +1,8 @@
+import json
 import logging
 import urllib.error
 import urllib.request
+from pathlib import Path
 from urllib.request import urlopen
 
 
@@ -10,6 +12,12 @@ class URLAccessError(Exception):
 
 class SPDXLicenseError(Exception):
     pass
+
+
+def load_json_file(path: str | Path) -> dict:
+    """Load JSON from a local file path."""
+    with Path(path).open("r", encoding="utf-8") as file_obj:
+        return json.load(file_obj)
 
 
 def get_file_from_url(url: str, retries: int = 0) -> str:

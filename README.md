@@ -11,6 +11,7 @@ The service rewrites internal links, manages licenses, and prepares data for sea
 - **STAC Link Rewriting:** Ensures all STAC links (`self`, `parent`, `root`, `collection`, etc.) are rewritten to point to the new catalogue location.
 - **License Handling:** Maps SPDX license codes to filenames and ensures license links are present and correct.
 - **Workflow Support:** Automatically completes STAC Collection definitions for workflow collections, scraping CWL scripts for metadata where available.
+- **QA Asset Enrichment:** Adds derived QA JSON assets to mapped collections.
 - **Patch Support:** Supports patching collections using JSON patches stored in S3.
 - **Extensible Processing:** Modular processor classes for link, workflow, and render transformations.
 - **Testing:** Comprehensive test suite using `pytest`.
@@ -59,6 +60,8 @@ The Harvest Transformer is configured through environment variables, command-lin
 - `S3_SPDX_BUCKET` (optional): The S3 bucket containing SPDX license files for license link rewriting.
 - `SPDX_LICENCE_PATH` (optional): The path within the SPDX bucket where license files are stored.
 - `HOSTED_ZONE` (optional): The DNS hosted zone for output URLs, if custom domain management is required.
+- `QA_COLLECTION_MAP_FILE` (optional): Local JSON file that maps collection IDs to QA keys. Defaults to `qa-collection-map.json` in the repository root.
+- `QA_ASSET_ROOT` (optional): Base URL for derived QA JSON asset hrefs. Defaults to the NPL QA workflow root.
 
 
 ## Pulsar Messages
@@ -143,6 +146,7 @@ Useful Makefile targets:
 - **link_processor.py**: Handles STAC link rewriting and license link management.
 - **workflow_processor.py**: Handles workflow-specific STAC transformations, including CWL scraping.
 - **render_processor.py**: Enables the STAC render extension for specified collections.
+- **qa_processor.py**: Adds derived QA JSON assets for collections that appear in the QA mapping file.
 - **transformer.py**: Main transformation logic, patching, and orchestration.
 - **transformer_messager.py**: Handles Pulsar messaging and S3 interactions.
 - **utils.py**: Utility functions.
