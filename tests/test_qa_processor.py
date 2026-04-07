@@ -7,7 +7,7 @@ from harvest_transformer.transformer import update_file
 SOURCE_PATH = "https://example.link.for.test/"
 TARGET = "/target_directory/"
 OUTPUT_ROOT = "https://output.root.test"
-QA_ASSET_ROOT = "https://npl.eodatahub-workspaces.org.uk/files/workspaces-eodhp/processing-results/qa-workflow"
+QA_ASSET_ROOT = "https://collection-qa.s3.eu-west-2.amazonaws.com"
 
 
 def make_collection(collection_id="sentinel2_ard", assets=None):
@@ -48,18 +48,12 @@ def test_adds_qa_assets_to_mapped_collection():
     output_json = json.loads(output)
 
     assert output_json["assets"]["qa_documentation"] == {
-        "href": (
-            f"{QA_ASSET_ROOT}/sentinel-2_l1c_qa/qa_documentation/"
-            "sentinel-2_l1c_qa_check_quality_processes_review.json"
-        ),
+        "href": f"{QA_ASSET_ROOT}/qa_documentation/sentinel-2_l1c_qa_check_quality_processes_review.json",
         "type": "application/json",
         "title": "Quality Processes Review",
     }
     assert output_json["assets"]["qa_radiometric"] == {
-        "href": (
-            f"{QA_ASSET_ROOT}/sentinel-2_l1c_qa/qa_radiometric/"
-            "sentinel-2_l1c_qa_check_radiometric_unc_all_dates.json"
-        ),
+        "href": f"{QA_ASSET_ROOT}/qa_radiometric/sentinel-2_l1c_qa_check_radiometric_unc_all_dates.json",
         "type": "application/json",
         "title": "Radiometric Uncertainty",
     }
@@ -114,9 +108,7 @@ def test_preserves_existing_assets_when_adding_qa_assets():
 
 def test_does_not_overwrite_existing_qa_assets():
     processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
-    entry_body = make_collection(
-        assets={"qa_documentation": {"href": "https://example.com/existing-doc.json"}}
-    )
+    entry_body = make_collection(assets={"qa_documentation": {"href": "https://example.com/existing-doc.json"}})
 
     output = update_file(
         file_name="mytestfile.json",
@@ -130,7 +122,5 @@ def test_does_not_overwrite_existing_qa_assets():
 
     output_json = json.loads(output)
 
-    assert output_json["assets"]["qa_documentation"] == {
-        "href": "https://example.com/existing-doc.json"
-    }
+    assert output_json["assets"]["qa_documentation"] == {"href": "https://example.com/existing-doc.json"}
     assert "qa_radiometric" in output_json["assets"]

@@ -1,7 +1,6 @@
 import logging
 import os
 import uuid
-from pathlib import Path
 
 import botocore
 import botocore.client
@@ -17,7 +16,7 @@ from eodhp_utils.runner import (
 from harvest_transformer.link_processor import LinkProcessor
 from harvest_transformer.qa_processor import QAProcessor
 from harvest_transformer.render_processor import RenderProcessor
-from harvest_transformer.utils import load_json_file
+from harvest_transformer.utils import load_json_url
 from harvest_transformer.workflow_processor import WorkflowProcessor
 
 from .transformer_messager import TransformerMessager
@@ -52,19 +51,19 @@ def main(verbose: int, threads: int) -> None:
     )
 
     destination_bucket = os.environ.get("S3_BUCKET")
-    qa_mapping_path = os.getenv(
-        "QA_COLLECTION_MAP_FILE",
-        str(Path(__file__).resolve().parent.parent / "qa-collection-map.json"),
+    qa_mapping_url = os.getenv(
+        "QA_COLLECTION_MAP_URL",
+        "https://collection-qa.s3.eu-west-2.amazonaws.com/qa-collection-map.json",
     )
     qa_asset_root = os.getenv("QA_ASSET_ROOT")
 
     try:
-        qa_collection_map = load_json_file(qa_mapping_path)
+        qa_collection_map = load_json_url(qa_mapping_url)
         if not isinstance(qa_collection_map, dict):
             raise TypeError("QA collection map must be a JSON object")
     except (OSError, ValueError, TypeError) as exc:
         qa_collection_map = {}
-        logging.warning(f"Unable to load QA collection map from {qa_mapping_path}: {exc}")
+        logging.warning(f"Unable to load QA collection map from {qa_mapping_url}: {exc}")
 
     transformer_messager = TransformerMessager(
         processors=[

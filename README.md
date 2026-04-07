@@ -60,8 +60,8 @@ The Harvest Transformer is configured through environment variables, command-lin
 - `S3_SPDX_BUCKET` (optional): The S3 bucket containing SPDX license files for license link rewriting.
 - `SPDX_LICENCE_PATH` (optional): The path within the SPDX bucket where license files are stored.
 - `HOSTED_ZONE` (optional): The DNS hosted zone for output URLs, if custom domain management is required.
-- `QA_COLLECTION_MAP_FILE` (optional): Local JSON file that maps collection IDs to QA keys. Defaults to `qa-collection-map.json` in the repository root.
-- `QA_ASSET_ROOT` (optional): Base URL for derived QA JSON asset hrefs. Defaults to the NPL QA workflow root.
+- `QA_COLLECTION_MAP_URL` (optional): HTTPS URL to JSON mapping of collection IDs to QA keys. Defaults to `https://collection-qa.s3.eu-west-2.amazonaws.com/qa-collection-map.json`.
+- `QA_ASSET_ROOT` (optional): Base URL for derived QA JSON asset hrefs. Defaults to `https://collection-qa.s3.eu-west-2.amazonaws.com`.
 
 
 ## Pulsar Messages

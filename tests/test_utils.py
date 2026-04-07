@@ -1,6 +1,18 @@
 import pytest
 
+from harvest_transformer import utils
 from harvest_transformer.utils import URLAccessError, get_file_from_url
+
+
+def test_load_json_url_parses_json(mocker):
+    mocker.patch(
+        "harvest_transformer.utils.get_file_from_url",
+        return_value='{"sentinel2_ard":"sentinel-2_l1c_qa"}',
+    )
+
+    output = utils.load_json_url("https://collection-qa.s3.eu-west-2.amazonaws.com/qa-collection-map.json")
+
+    assert output == {"sentinel2_ard": "sentinel-2_l1c_qa"}
 
 
 def test_get_file_from_url_fail():

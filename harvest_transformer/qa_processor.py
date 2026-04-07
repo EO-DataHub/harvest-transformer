@@ -1,13 +1,10 @@
 import logging
-from typing import Union
 
-DEFAULT_QA_ASSET_ROOT = (
-    "https://npl.eodatahub-workspaces.org.uk/files/workspaces-eodhp/processing-results/qa-workflow"
-)
+DEFAULT_QA_ASSET_ROOT = "https://collection-qa.s3.eu-west-2.amazonaws.com"
 
 
 class QAProcessor:
-    def __init__(self, collection_map: dict[str, str] | None = None, asset_root: str | None = None):
+    def __init__(self, collection_map: dict[str, str] | None = None, asset_root: str | None = None) -> None:
         self.collection_map = collection_map or {}
         self.asset_root = (asset_root or DEFAULT_QA_ASSET_ROOT).rstrip("/")
 
@@ -16,23 +13,20 @@ class QAProcessor:
 
     def build_qa_assets(self, collection_id: str) -> dict[str, dict]:
         qa_key = self.collection_map[collection_id]
-        base_href = f"{self.asset_root}/{qa_key}"
         return {
             "qa_documentation": {
-                "href": (
-                    f"{base_href}/qa_documentation/{qa_key}_check_quality_processes_review.json"
-                ),
+                "href": (f"{self.asset_root}/qa_documentation/{qa_key}_check_quality_processes_review.json"),
                 "type": "application/json",
                 "title": "Quality Processes Review",
             },
             "qa_radiometric": {
-                "href": f"{base_href}/qa_radiometric/{qa_key}_check_radiometric_unc_all_dates.json",
+                "href": (f"{self.asset_root}/qa_radiometric/{qa_key}_check_radiometric_unc_all_dates.json"),
                 "type": "application/json",
                 "title": "Radiometric Uncertainty",
             },
         }
 
-    def upsert_asset(self, entry_body: dict, key: str, asset_def: dict):
+    def upsert_asset(self, entry_body: dict, key: str, asset_def: dict) -> None:
         entry_body.setdefault("assets", {})
         if key not in entry_body["assets"]:
             entry_body["assets"][key] = asset_def
@@ -42,9 +36,9 @@ class QAProcessor:
         file_name: str,
         source: str,
         target_location: str,
-        entry_body: Union[dict, str],
+        entry_body: dict | str,
         output_root: str,
-        **kwargs,
+        **kwargs: object,
     ) -> dict:
         del file_name, source, target_location, output_root, kwargs
         if not isinstance(entry_body, dict):

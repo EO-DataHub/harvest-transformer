@@ -20,6 +20,11 @@ def load_json_file(path: str | Path) -> dict:
         return json.load(file_obj)
 
 
+def load_json_url(url: str) -> dict:
+    """Load JSON from a URL."""
+    return json.loads(get_file_from_url(url))
+
+
 def get_file_from_url(url: str, retries: int = 0) -> str:
     """Returns contents of data available at given URL"""
     if retries == 3:
