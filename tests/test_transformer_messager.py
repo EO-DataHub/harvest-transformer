@@ -10,7 +10,6 @@ from harvest_transformer.transformer_messager import TransformerMessager
 
 @mock.patch("harvest_transformer.transformer_messager.TransformerMessager.process_update_body")
 def test_process_update(mock_process_update_body):
-
     with moto.mock_aws():
         stac_item = {"id": "test-item"}
         # Create S3 resources and upload file to S3
