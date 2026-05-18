@@ -18,11 +18,13 @@ class QAProcessor:
                 "href": (f"{self.asset_root}/qa_documentation/{qa_key}_check_quality_processes_review.json"),
                 "type": "application/json",
                 "title": "Quality Processes Review",
+                "roles": ["metadata", "quality"],
             },
             "qa_radiometric": {
                 "href": (f"{self.asset_root}/qa_radiometric/{qa_key}_check_radiometric_unc_all_dates.json"),
                 "type": "application/json",
                 "title": "Radiometric Uncertainty",
+                "roles": ["metadata", "quality"],
             },
         }
 
