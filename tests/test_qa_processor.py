@@ -51,11 +51,13 @@ def test_adds_qa_assets_to_mapped_collection():
         "href": f"{QA_ASSET_ROOT}/qa_documentation/sentinel-2_l1c_qa_check_quality_processes_review.json",
         "type": "application/json",
         "title": "Quality Processes Review",
+        "roles": ["metadata", "quality"],
     }
     assert output_json["assets"]["qa_radiometric"] == {
         "href": f"{QA_ASSET_ROOT}/qa_radiometric/sentinel-2_l1c_qa_check_radiometric_unc_all_dates.json",
         "type": "application/json",
         "title": "Radiometric Uncertainty",
+        "roles": ["metadata", "quality"],
     }
 
 
