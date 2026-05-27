@@ -1,4 +1,3 @@
-import logging
 import os
 import uuid
 
@@ -16,7 +15,6 @@ from eodhp_utils.runner import (
 from harvest_transformer.link_processor import LinkProcessor
 from harvest_transformer.qa_processor import QAProcessor
 from harvest_transformer.render_processor import RenderProcessor
-from harvest_transformer.utils import load_json_url
 from harvest_transformer.workflow_processor import WorkflowProcessor
 
 from .transformer_messager import TransformerMessager
@@ -57,19 +55,11 @@ def main(verbose: int, threads: int) -> None:
     )
     qa_asset_root = os.getenv("QA_ASSET_ROOT")
 
-    try:
-        qa_collection_map = load_json_url(qa_mapping_url)
-        if not isinstance(qa_collection_map, dict):
-            raise TypeError("QA collection map must be a JSON object")
-    except (OSError, ValueError, TypeError) as exc:
-        qa_collection_map = {}
-        logging.warning(f"Unable to load QA collection map from {qa_mapping_url}: {exc}")
-
     transformer_messager = TransformerMessager(
         processors=[
             WorkflowProcessor(),
             LinkProcessor(s3_client=s3_client),
-            QAProcessor(collection_map=qa_collection_map, asset_root=qa_asset_root),
+            QAProcessor(map_url=qa_mapping_url, asset_root=qa_asset_root),
             RenderProcessor(),
         ],
         s3_client=s3_client,

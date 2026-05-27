@@ -1,5 +1,6 @@
 import copy
 import json
+from unittest.mock import patch
 
 from harvest_transformer.qa_processor import QAProcessor
 from harvest_transformer.transformer import update_file
@@ -35,48 +36,31 @@ def test_adds_qa_assets_to_mapped_collection():
     processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
     entry_body = make_collection()
 
-    output = update_file(
-        file_name="mytestfile.json",
-        source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
-        entry_body=entry_body,
-        output_root=OUTPUT_ROOT,
-        processors=processor,
-        workspace="test",
-    )
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=True):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
 
     output_json = json.loads(output)
 
     assert output_json["assets"]["qa_documentation"] == {
-        "href": f"{QA_ASSET_ROOT}/qa_documentation/sentinel-2_l1c_qa_check_quality_processes_review.json",
+        "href": f"{QA_ASSET_ROOT}/qa_documentation/sentinel-2_l1c_qa_qa_check_quality_processes_review.json",
         "type": "application/json",
         "title": "Quality Processes Review",
         "roles": ["metadata", "quality"],
     }
     assert output_json["assets"]["qa_radiometric"] == {
-        "href": f"{QA_ASSET_ROOT}/qa_radiometric/sentinel-2_l1c_qa_check_radiometric_unc_all_dates.json",
+        "href": f"{QA_ASSET_ROOT}/qa_radiometric/sentinel-2_l1c_qa_qa_check_radiometric_unc_all_dates.json",
         "type": "application/json",
         "title": "Radiometric Uncertainty",
         "roles": ["metadata", "quality"],
     }
-
-
-def test_leaves_unmapped_collection_unchanged():
-    processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
-    entry_body = make_collection(collection_id="sentinel1")
-    input_data = copy.deepcopy(entry_body)
-
-    output = update_file(
-        file_name="mytestfile.json",
-        source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
-        entry_body=entry_body,
-        output_root=OUTPUT_ROOT,
-        processors=processor,
-        workspace="test",
-    )
-
-    assert json.loads(output) == input_data
 
 
 def test_leaves_non_collection_unchanged():
@@ -91,15 +75,16 @@ def test_preserves_existing_assets_when_adding_qa_assets():
     processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
     entry_body = make_collection(assets={"thumbnail": {"href": "https://example.com/thumb.png"}})
 
-    output = update_file(
-        file_name="mytestfile.json",
-        source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
-        entry_body=entry_body,
-        output_root=OUTPUT_ROOT,
-        processors=processor,
-        workspace="test",
-    )
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=True):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
 
     output_json = json.loads(output)
 
@@ -112,15 +97,16 @@ def test_does_not_overwrite_existing_qa_assets():
     processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
     entry_body = make_collection(assets={"qa_documentation": {"href": "https://example.com/existing-doc.json"}})
 
-    output = update_file(
-        file_name="mytestfile.json",
-        source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
-        entry_body=entry_body,
-        output_root=OUTPUT_ROOT,
-        processors=processor,
-        workspace="test",
-    )
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=True):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
 
     output_json = json.loads(output)
 
@@ -132,15 +118,16 @@ def test_normalizes_asset_root_trailing_slash():
     processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"}, asset_root="https://qa.example.test///")]
     entry_body = make_collection()
 
-    output = update_file(
-        file_name="mytestfile.json",
-        source=SOURCE_PATH,
-        target_location=OUTPUT_ROOT + TARGET,
-        entry_body=entry_body,
-        output_root=OUTPUT_ROOT,
-        processors=processor,
-        workspace="test",
-    )
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=True):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
 
     output_json = json.loads(output)
 
@@ -162,3 +149,65 @@ def test_leaves_collection_without_type_or_id_unchanged():
         processor.update_file("test.json", SOURCE_PATH, OUTPUT_ROOT, entry_without_type, OUTPUT_ROOT)
         == entry_without_type
     )
+
+
+def test_unmapped_collection_uses_collection_id_as_qa_key():
+    processor = [QAProcessor({})]  # empty map
+    entry_body = make_collection(collection_id="my_collection")
+
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=True):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
+
+    output_json = json.loads(output)
+    assert "my_collection_qa_check_quality_processes_review.json" in output_json["assets"]["qa_documentation"]["href"]
+    assert "my_collection_qa_check_radiometric_unc_all_dates.json" in output_json["assets"]["qa_radiometric"]["href"]
+
+
+def test_adds_only_existing_qa_assets():
+    processor = [QAProcessor({"sentinel2_ard": "sentinel-2_l1c_qa"})]
+    entry_body = make_collection()
+
+    def exists_only_for_documentation(url):
+        return "qa_documentation" in url
+
+    with patch("harvest_transformer.qa_processor.url_exists", side_effect=exists_only_for_documentation):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
+
+    output_json = json.loads(output)
+    assert "qa_documentation" in output_json["assets"]
+    assert "qa_radiometric" not in output_json["assets"]
+
+
+def test_leaves_collection_unchanged_when_no_qa_files_exist():
+    processor = [QAProcessor({})]
+    entry_body = make_collection(collection_id="no_qa_here")
+    input_data = copy.deepcopy(entry_body)
+
+    with patch("harvest_transformer.qa_processor.url_exists", return_value=False):
+        output = update_file(
+            file_name="mytestfile.json",
+            source=SOURCE_PATH,
+            target_location=OUTPUT_ROOT + TARGET,
+            entry_body=entry_body,
+            output_root=OUTPUT_ROOT,
+            processors=processor,
+            workspace="test",
+        )
+
+    assert json.loads(output) == input_data
