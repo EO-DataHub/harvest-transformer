@@ -1,5 +1,7 @@
 import logging
 
+from harvest_transformer.utils import url_exists
+
 DEFAULT_QA_ASSET_ROOT = "https://collection-qa.s3.eu-west-2.amazonaws.com"
 
 
@@ -9,19 +11,19 @@ class QAProcessor:
         self.asset_root = (asset_root or DEFAULT_QA_ASSET_ROOT).rstrip("/")
 
     def is_qa_enabled_collection(self, entry_body: dict) -> bool:
-        return entry_body.get("type") == "Collection" and entry_body.get("id") in self.collection_map
+        return entry_body.get("type") == "Collection" and bool(entry_body.get("id"))
 
     def build_qa_assets(self, collection_id: str) -> dict[str, dict]:
-        qa_key = self.collection_map[collection_id]
+        qa_key = self.collection_map.get(collection_id, collection_id)
         return {
             "qa_documentation": {
-                "href": (f"{self.asset_root}/qa_documentation/{qa_key}_check_quality_processes_review.json"),
+                "href": (f"{self.asset_root}/qa_documentation/{qa_key}_qa_check_quality_processes_review.json"),
                 "type": "application/json",
                 "title": "Quality Processes Review",
                 "roles": ["metadata", "quality"],
             },
             "qa_radiometric": {
-                "href": (f"{self.asset_root}/qa_radiometric/{qa_key}_check_radiometric_unc_all_dates.json"),
+                "href": (f"{self.asset_root}/qa_radiometric/{qa_key}_qa_check_radiometric_unc_all_dates.json"),
                 "type": "application/json",
                 "title": "Radiometric Uncertainty",
                 "roles": ["metadata", "quality"],
@@ -50,8 +52,12 @@ class QAProcessor:
             return entry_body
 
         collection_id = entry_body["id"]
-        logging.info(f"Adding QA assets to collection {collection_id}")
+        logging.info(f"Checking QA assets for collection {collection_id}")
         for key, asset_def in self.build_qa_assets(collection_id).items():
-            self.upsert_asset(entry_body, key, asset_def)
+            if url_exists(asset_def["href"]):
+                logging.info(f"Adding {key} asset to collection {collection_id}")
+                self.upsert_asset(entry_body, key, asset_def)
+            else:
+                logging.debug(f"QA asset not found, skipping {key} for {collection_id}: {asset_def['href']}")
 
         return entry_body

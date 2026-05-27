@@ -38,3 +38,13 @@ def get_file_from_url(url: str, retries: int = 0) -> str:
         logging.error(f"Unable to access {url}, retrying...")
         return get_file_from_url(url, retries + 1)
     return body.decode("utf-8")
+
+
+def url_exists(url: str) -> bool:
+    """Return True if a HEAD request to *url* returns HTTP 2xx, False otherwise."""
+    try:
+        req = urllib.request.Request(url, method="HEAD")
+        with urlopen(req, timeout=5) as response:
+            return 200 <= response.status < 300
+    except Exception:
+        return False
