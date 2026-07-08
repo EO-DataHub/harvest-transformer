@@ -31,6 +31,8 @@ jobs:
       image_name: ${{ vars.IMAGE_NAME }}
       aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
       aws_ecr_alias: ${{ vars.AWS_ECR_ALIAS }}
+      build_args: |
+        QA_ASSET_ROOT=${{ vars.QA_ASSET_ROOT }}
     permissions:
       id-token: write
       contents: read

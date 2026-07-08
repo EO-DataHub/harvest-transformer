@@ -8,6 +8,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 ENV UV_NO_DEV=1
 
+ARG QA_ASSET_ROOT
+ENV QA_ASSET_ROOT=${QA_ASSET_ROOT}
+
 WORKDIR /app
 
 # Install dependencies
