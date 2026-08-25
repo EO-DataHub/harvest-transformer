@@ -40,7 +40,7 @@ dependencies = [
     "lxml-html-clean>=0.4.4",
     "jsonpatch",
     "click",
-    "eodhp-utils @ git+https://github.com/EO-DataHub/eodhp-utils@v0.1.12",
+    "eodhp-utils @ git+https://github.com/EO-DataHub/eodhp-utils@v0.1.14",
 ]
 
 [project.urls]
